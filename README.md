@@ -33,7 +33,7 @@ Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm r
 
 The current world includes a larger irregular coastline, roads, a river with bridges, houses, seating, boats, scattered trees, streetlights and decorative pedestrians. Press C to switch between walking and a touring car, O for the map, M for the destination menu and E to interact nearby. The touring car is separate from the consent-gated timed driving experience.
 
-The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The airport offers fictional scenic departures to the owner-selected destinations, not live flights or bookings. The arcade indexes public GitHub projects. Refresh the snapshot with node scripts/refresh-catalog.mjs. Press Escape for controls, camera settings and movement layouts. The riverside dock offers a sail between the southern bridge and the estuary.
+The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The airport flies to nine playable miniature destinations. Walk with the arrows or select a work stop to walk there, then use the action button or E. Each three-stop activity changes the local landmark and earns an island stamp. Return flights reopen the board, which remembers progress during the current visit. The arcade indexes public GitHub projects. Refresh the snapshot with node scripts/refresh-catalog.mjs. Press Escape for controls, camera settings and movement layouts. The riverside dock offers a sail between the southern bridge and the estuary.
 
 ## Driving controls
 

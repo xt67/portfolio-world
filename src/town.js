@@ -147,7 +147,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     for(const b of boats){if(sailing&&b===boats[1])continue;const z=b.base+(reduced?0:Math.sin(elapsed*.08)*4);b.g.position.set(riverX(z),.65+(reduced?0:Math.sin(elapsed*1.5)*.04),z);b.g.rotation.y=Math.atan2(riverX(z+.2)-riverX(z-.2),.4);}
     if(!reduced){experiment.rotation.y+=dt*(labActive?2:.15);dish.rotation.y+=dt*(labActive?.7:.03);cat.rotation.y=Math.sin(elapsed*.4)*.25;for(const p of people)p.g.rotation.y=Math.sin(elapsed*.2+p.i)*.3;}
     neon.emissiveIntensity=crewActive?2:.4;
-    if(flight){flight.time+=dt;const t=flight.time;plane.position.set(18+Math.max(0,t-5)*1.2,.6+Math.max(0,t-2)*1.4,-58-t*3);plane.rotation.z=-Math.min(.2,t*.01);if(t>18){flight=null;plane.position.set(18,.6,-58);plane.rotation.z=0;}}
+    if(flight){flight.time+=dt;const t=flight.time*3;plane.position.set(18+Math.max(0,t-5)*1.2,.6+Math.max(0,t-2)*1.4,-58-t*3);plane.rotation.z=-Math.min(.2,t*.01);if(t>18){flight=null;plane.position.set(18,.6,-58);plane.rotation.z=0;}}
     return flight;
   }
   function blocked(x,z,margin=.4){return !terrainAllows(x,z,margin)||blockedByObjects(x,z,obstacles,margin);}
@@ -155,5 +155,5 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   let lastStreetX=Infinity,lastStreetZ=Infinity,street='';
   function roadName(x,z){if(Math.hypot(x-lastStreetX,z-lastStreetZ)>1){street=nearestRoad(x,z).road.name;lastStreetX=x;lastStreetZ=z;}return street;}
   const heightAt=(x,z)=>onBridge(x,z)?deckY+.03:.5;
-  return {boat:boats[1].g,setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
+  return {boat:boats[1].g,endFlight:()=>{flight=null;plane.position.set(18,.6,-58);plane.rotation.z=0;},setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
 }
