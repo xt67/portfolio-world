@@ -1,5 +1,7 @@
 # Rayan Rahman / XT67 Research Lab
 
+[Explore the live portfolio](https://portfolio-world-three.vercel.app/)
+
 An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Chai stalls offer optional support links and a downloadable project résumé is available in My Story.
 
 The interaction direction was inspired by the owner’s references, [Bruno Simon](https://bruno-simon.com/) and [Saurabh Mhatre](https://saurabhmhatreportfolio.netlify.app/). The island geometry, character, interface and code are original to this portfolio; no reference-site code or assets were copied.
@@ -27,7 +29,7 @@ AURORA content reflects its documented feasibility status, with publication expe
 
 ## Hosting
 
-Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm run build`, output `dist/`. No server secrets or API keys are required. The repository is https://github.com/xt67/portfolio-world. Keep deployment protection enabled for the private review stage. The historical Sites identity remains in `.openai/hosting.json`; it is not required by Vercel.
+Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm run build`, output `dist/`. No server secrets or API keys are required. The repository is https://github.com/xt67/portfolio-world. The production website is public. Generated preview addresses retain Vercel sign-in protection. The historical Sites identity remains in `.openai/hosting.json`; it is not required by Vercel.
 
 ## Expanded world
 
