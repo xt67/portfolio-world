@@ -1,12 +1,12 @@
 # Rayan Rahman / XT67 Research Lab
 
-An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting and a simpler page at `?view=classic` are available. Social destinations belong to Rayan Rahman and were supplied by the owner. Donations are intentionally omitted. Resume and achievements are pending owner-provided material.
+An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Donations are intentionally omitted. Resume and achievements are pending owner-provided material.
 
 The interaction direction was inspired by the owner’s references, [Bruno Simon](https://bruno-simon.com/) and [Saurabh Mhatre](https://saurabhmhatreportfolio.netlify.app/). The island geometry, character, interface and code are original to this portfolio; no reference-site code or assets were copied.
 
 ## Run locally
 
-Use Node.js 22.12+ (tested on Node 24) and npm:
+Use Node.js 24 and npm:
 
 ```sh
 npm ci
@@ -23,8 +23,18 @@ The browser oval uses simplified kinematics; it is not CARLA, cannot evaluate th
 
 ## Content and accessibility
 
-AURORA content reflects its documented feasibility status, with publication experiments pending. The project cards remain accessible when WebGL is unavailable; driving requires WebGL. The interface provides labelled keyboard-accessible actions, a reduced-motion camera mode and touch controls. GitHub QR generation runs locally. Google Fonts may receive ordinary browser font requests; browser fonts fall back to sans-serif if blocked.
+AURORA content reflects its documented feasibility status, with publication experiments pending. The 3D portfolio requires WebGL; unsupported browsers receive a clear message and a GitHub link. The interface provides labelled keyboard-accessible actions, a reduced-motion camera mode and touch controls. GitHub QR generation runs locally. Google Fonts may receive ordinary browser font requests; browser fonts fall back to sans-serif if blocked.
 
 ## Hosting
 
-The Sites identity is stored in `.openai/hosting.json`. Vite generates static assets in `dist/`. No server secrets or API keys are required. A private deployment is the initial review version; public audience must be verified before advertising the site to visitors.
+Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm run build`, output `dist/`. No server secrets or API keys are required. The repository is https://github.com/xt67/portfolio-world. Keep deployment protection enabled for the private review stage. The historical Sites identity remains in `.openai/hosting.json`; it is not required by Vercel.
+
+## Expanded world
+
+The current world includes a larger irregular coastline, roads, a river with bridges, houses, seating, boats, scattered trees, streetlights and decorative pedestrians. Press C to switch between walking and a touring car, O for the map, M for the destination menu and E to interact nearby. The touring car is separate from the consent-gated timed driving experience.
+
+The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The airport offers fictional scenic departures to the owner-selected destinations, not live flights or bookings. Project images and additional-project placeholders live in the gallery.
+
+## Driving controls
+
+W / Up accelerates forward; S / Down brakes to zero, then reverses while held. Forward input similarly brakes reverse motion before accelerating. Both pedals together brake. Release both to coast to a stop. Left/Right or A/D steer in both directions. Touch buttons use the same inputs. Reverse is slower than forward and displays an R prefix. Export schema v2 records signed speed and the combined brake/reverse control.

@@ -1,4 +1,13 @@
-# Portfolio validation — 12 November 2026
+# Portfolio validation
+
+## Current expanded world — 24 November 2026
+
+- All nine simulation and navigation tests passed, including reverse controls and land/river boundaries.
+- Production build passed with Vite 8.3.8 on Node 24. The shared JavaScript bundle is about 203 kB gzip and triggers a bundle-size advisory.
+- Browser checks confirmed the expanded world renders, the touring car moves, reverse displays an R speed, and the resume card shows its pending-content state.
+- The new airport, gallery, bridges and expanded mobile layout have not received exhaustive end-to-end checks. Earlier checks below apply to the earlier world and are not evidence that every expanded feature was rechecked.
+
+## Earlier island — 12 November 2026
 
 - Production build completed with Vite 8.3.8 on Node 24. There is a bundle-size advisory for the shared Three.js module (about 186 kB gzip); no build failure.
 - Three simulation tests passed: bounded time steps, no reverse under braking, off-road speed cap and exported provenance.

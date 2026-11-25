@@ -2,3 +2,8 @@ node_modules/
 dist/
 .sites/
 *.zip
+.vercel/
+.env
+.env.*
+!.env.example
+*HANDOFF_LOCAL*

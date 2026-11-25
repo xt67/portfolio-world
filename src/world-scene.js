@@ -1,15 +1,19 @@
 import * as T from 'three';
+import {buildTown} from './town.js';
 export const locations=[
  {id:'aurora',name:'AURORA',x:-15,z:-13,color:0x91d8cc},
  {id:'autocar',name:'AutoCar garage',x:14,z:-12,color:0xffb76b},
  {id:'cass',name:'CASS',x:-17,z:11,color:0xb5a4e2},
  {id:'paqs',name:'Air quality garden',x:16,z:12,color:0xaec97d},
- {id:'connect',name:'Say hello',x:0,z:23,color:0xf2a798}
+ {id:'connect',name:'Say hello',x:0,z:23,color:0xf2a798},
+ {id:'personal',name:'My story',x:-40,z:-18,color:0xf1d092},
+ {id:'gallery',name:'Project gallery',x:-40,z:22,color:0xb8caa1},
+ {id:'airport',name:'Next chapter airport',x:3,z:-48,color:0x9bc5b9}
 ];
 export function createWorld(canvas){
  const renderer=new T.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setClearColor(0x214f57);renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
- const scene=new T.Scene();scene.fog=new T.Fog(0x214f57,70,165);const camera=new T.PerspectiveCamera(40,1,.1,250);camera.position.set(46,53,59);camera.lookAt(0,0,0);
- const hemi=new T.HemisphereLight(0xdff7ff,0x56654c,2.6);scene.add(hemi);const sun=new T.DirectionalLight(0xffe0b3,3.6);sun.position.set(-25,48,10);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:.5,far:100});sun.shadow.bias=-.001;scene.add(sun);
+ const scene=new T.Scene();scene.fog=new T.Fog(0x214f57,180,380);const camera=new T.PerspectiveCamera(40,1,.1,500);camera.position.set(46,53,59);camera.lookAt(0,0,0);
+ const hemi=new T.HemisphereLight(0xdff7ff,0x56654c,2.6);scene.add(hemi);const sun=new T.DirectionalLight(0xffe0b3,3.6);sun.position.set(-55,100,40);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-85,right:85,top:85,bottom:-85,near:.5,far:250});sun.shadow.bias=-.001;scene.add(sun);
  const world=new T.Group();scene.add(world);const interactables=[],obstacles=[],animated=[];const materialCache=new Map();
  function mat(color){if(!materialCache.has(color))materialCache.set(color,new T.MeshStandardMaterial({color,roughness:.85}));return materialCache.get(color);}
  function mesh(parent,geo,color,x=0,y=0,z=0){const m=new T.Mesh(geo,mat(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
@@ -18,17 +22,15 @@ export function createWorld(canvas){
  function sphere(p,r,x,y,z,c){return mesh(p,new T.IcosahedronGeometry(r,1),c,x,y,z);}
  function text(p,label,x,y,z,width=6,color='#1c423e'){const c=document.createElement('canvas');c.width=1024;c.height=180;const ctx=c.getContext('2d');ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 70px sans-serif';ctx.fillText(label,512,92,990);const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;const m=new T.Mesh(new T.PlaneGeometry(width,width*180/1024),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide,depthWrite:false}));m.position.set(x,y,z);p.add(m);return m;}
  const water=mesh(scene,new T.PlaneGeometry(500,500),0x285f67,0,-2.7,0);water.rotation.x=-Math.PI/2;water.receiveShadow=false;
- cyl(world,34,3,0,-1.3,0,0x987c5a,31,64);cyl(world,31.8,.35,0,.1,0,0x83a88e,31.8,64);
+ // The town module supplies a larger, irregular coastline.
  cyl(world,7.5,.16,0,.37,0,0xe3d3ad,7.5,48);cyl(world,5.8,.03,0,.47,0,0xf2dfb4,5.8,48);
- for(const l of locations){const len=Math.hypot(l.x,l.z);const path=box(world,3.6,.09,len,l.x/2,.36,l.z/2,0xe0cca4);path.rotation.y=Math.atan2(l.x,l.z);cyl(world,7,.16,l.x,.4,l.z,0xd9cbb0,7,6);}
+ for(const l of locations.slice(0,5)){const len=Math.hypot(l.x,l.z);const path=box(world,3.6,.09,len,l.x/2,.36,l.z/2,0xe0cca4);path.rotation.y=Math.atan2(l.x,l.z);cyl(world,7,.16,l.x,.4,l.z,0xd9cbb0,7,6);}
  text(world,'RAYAN RAHMAN',0,.52,1,11).rotation.x=-Math.PI/2;text(world,'XT67 · A WORLD OF EXPERIMENTS',0,.53,3,7,'#54756b').rotation.x=-Math.PI/2;
- for(const l of locations)for(let j=7;j<Math.hypot(l.x,l.z)-5;j+=2.4){let a=Math.atan2(l.x,l.z);const stone=box(world,1.8,.03,.55,Math.sin(a)*j,.44,Math.cos(a)*j,0xcdb58f);stone.rotation.y=a;}
+ for(const l of locations.slice(0,5))for(let j=7;j<Math.hypot(l.x,l.z)-5;j+=2.4){let a=Math.atan2(l.x,l.z);const stone=box(world,1.8,.03,.55,Math.sin(a)*j,.44,Math.cos(a)*j,0xcdb58f);stone.rotation.y=a;}
  function tree(x,z,scale=1,tint=0x5b8b70){const g=new T.Group();g.position.set(x,.3,z);g.scale.setScalar(scale);world.add(g);cyl(g,.16,1.8,0,.9,0,0x80634b,.22,7);sphere(g,1.3,0,2.4,0,tint);sphere(g,.85,.7,2,.3,tint);sphere(g,.8,-.6,2.2,-.3,tint);obstacles.push({x,z,r:.65*scale});}
  const rand=(n)=>{const v=Math.sin(n*193.17+13.1)*43758.5453;return v-Math.floor(v);};
- for(let i=0;i<46;i++){const a=i/46*Math.PI*2,r=27+rand(i)*3;tree(Math.sin(a)*r,Math.cos(a)*r,.65+rand(i+60)*.65,[0x507b64,0x6d9271,0xd5a09a,0x9cb18b][i%4]);}
  for(const [x,z] of [[-7,-10],[7,9],[6,-22],[-9,20],[-24,-1],[24,0]])tree(x,z,1.05,0x668e72);
  for(let i=0;i<100;i++){const x=(rand(i+100)-.5)*58,z=(rand(i+250)-.5)*58;if(Math.hypot(x,z)>30||Math.hypot(x,z)<9||locations.some(l=>Math.hypot(x-l.x,z-l.z)<8))continue;const g=new T.Group();g.position.set(x,.3,z);world.add(g);cyl(g,.035,.4,0,.2,0,0x4b7456,.035,5);sphere(g,.14,0,.48,0,[0xffd083,0xf0b2a1,0xe4e7bf][i%3]);}
- for(let i=0;i<22;i++){const a=i/22*Math.PI*2;const rock=sphere(world,.55+rand(i)*.8,Math.cos(a)*32,-.45,Math.sin(a)*32,0xb0a487);rock.scale.y=.65;}
  function pole(x,z){cyl(world,.07,2.4,x,1.5,z,0x50685c,.07,8);box(world,.45,.55,.45,x,2.8,z,0xf6d08b);box(world,.65,.12,.65,x,3.12,z,0x425b4e);}
  for(const l of locations){pole(l.x-4,l.z+4);pole(l.x+4,l.z+4);}
  function pavilion(l){const g=new T.Group();g.position.set(l.x,.5,l.z);world.add(g);box(g,9,.2,6,0,.15,0,0xf1e5c9);box(g,9,3.5,.3,0,2,-2.85,0xe2ddc9);for(const x of [-4.3,4.3])box(g,.28,4,.28,x,2,2.5,0xc5c6ad);box(g,9.6,.22,1.2,0,4.1,-2.8,l.color);box(g,9.6,.22,1.2,0,4.1,2.7,l.color);for(const x of [-4.5,4.5])box(g,.3,.25,6,x,4.1,0,l.color);text(g,l.name.toUpperCase(),0,3.1,-2.65,7);obstacles.push({x:l.x,z:l.z-2.85,r:1.3});return g;}
@@ -43,7 +45,8 @@ export function createWorld(canvas){
  const track=new T.Group();track.visible=false;scene.add(track);cyl(track,27,2,0,-1.3,0,0x987c5a,26,64);cyl(track,26,.1,0,-.22,0,0x84a78b,26,64);const road=mesh(track,new T.RingGeometry(8.9,13.1,160),0x455957,0,.02,0);road.rotation.x=-Math.PI/2;road.scale.x=1.45;for(let i=0;i<90;i++){const a=i/90*Math.PI*2;const stripe=box(track,.1,.04,.4,Math.cos(a)*15.95,.08,Math.sin(a)*11,0xeee0be);stripe.rotation.y=-a;}for(let i=0;i<100;i++){const a=i/100*Math.PI*2;for(const r of [8.8,13.2]){const curb=box(track,.4,.1,.55,Math.cos(a)*r*1.45,.07,Math.sin(a)*r,i%2?0xe9d4ab:0xd78f72);curb.rotation.y=-a;}}
  text(track,'AUTOCAR',0,.08,0,12,'#e9dfb9').rotation.x=-Math.PI/2;text(track,'THE HUMAN IN THE LOOP',0,.09,2,7,'#e9dfb9').rotation.x=-Math.PI/2;
  const car=new T.Group();track.add(car);box(car,1.1,.45,2.1,0,.45,0,0xf3b562);box(car,.85,.4,.9,0,.85,-.15,0x2c5550);for(const x of [-.6,.6])for(const z of [-.65,.65])box(car,.2,.45,.4,x,.3,z,0x253d37);box(car,.8,.13,.04,0,.5,1.07,0xffefbb);
+ const town=buildTown({T,world,scene,box,cyl,sphere,text,tree,pole,obstacles,car,mat,interactables});
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();
- function night(enabled){renderer.setClearColor(enabled?0x142d40:0x214f57);scene.fog.color.set(enabled?0x142d40:0x214f57);sun.intensity=enabled?.55:3.6;hemi.intensity=enabled?1.05:2.6;}
- return {T,renderer,scene,camera,world,track,car,avatar,limbs,marker,destination,interactables,obstacles,animated,night};
+ function night(enabled){town.night(enabled);renderer.setClearColor(enabled?0x142d40:0x214f57);scene.fog.color.set(enabled?0x142d40:0x214f57);sun.intensity=enabled?.55:3.6;hemi.intensity=enabled?1.05:2.6;}
+ return {T,renderer,scene,camera,world,track,car,avatar,limbs,marker,destination,interactables,obstacles,animated,night,town};
 }
