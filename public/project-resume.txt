@@ -1,0 +1,21 @@
+Rayan Rahman | xt67
+Project résumé
+rayanrahman088@gmail.com | github.com/xt67
+
+AURORA
+Can synthetic chest X-rays help when labelled data is limited? A controlled augmentation study, with MediSyn as its companion demo.
+https://github.com/xt67/AURORA
+
+AutoCar-Sim
+From human steering to learned behaviour. A CARLA-based driving pipeline with recorded sensor frames, behavioural cloning and held-out evaluation.
+https://github.com/xt67/AutoCar-Sim
+
+CASS
+Ask a database a question in everyday language. A local-model SQL assistant with streamed responses and practical database safeguards.
+https://github.com/xt67/CASS
+
+Pune Air Quality Sentinel
+A window into Pune’s air. Explore location-based air-quality forecasts and weather through a live API-powered dashboard.
+https://github.com/xt67/Pune-AQI-Monitor
+
+Future aim: pursue a master’s in Robotics and AI.

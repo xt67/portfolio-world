@@ -1,6 +1,6 @@
 # Rayan Rahman / XT67 Research Lab
 
-An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Donations are intentionally omitted. Resume and achievements are pending owner-provided material.
+An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Chai stalls offer optional support links and a downloadable project résumé is available in My Story.
 
 The interaction direction was inspired by the owner’s references, [Bruno Simon](https://bruno-simon.com/) and [Saurabh Mhatre](https://saurabhmhatreportfolio.netlify.app/). The island geometry, character, interface and code are original to this portfolio; no reference-site code or assets were copied.
 
@@ -33,7 +33,7 @@ Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm r
 
 The current world includes a larger irregular coastline, roads, a river with bridges, houses, seating, boats, scattered trees, streetlights and decorative pedestrians. Press C to switch between walking and a touring car, O for the map, M for the destination menu and E to interact nearby. The touring car is separate from the consent-gated timed driving experience.
 
-The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The airport offers fictional scenic departures to the owner-selected destinations, not live flights or bookings. Project images and additional-project placeholders live in the gallery.
+The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The airport offers fictional scenic departures to the owner-selected destinations, not live flights or bookings. The arcade indexes public GitHub projects. Refresh the snapshot with node scripts/refresh-catalog.mjs. Press Escape for controls, camera settings and movement layouts. The riverside dock offers a sail between the southern bridge and the estuary.
 
 ## Driving controls
 
