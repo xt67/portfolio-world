@@ -17,3 +17,7 @@
 - Phone layout inspected at 390 × 844. Touch movement and social panel worked; social destinations matched the owner-provided URLs; GitHub QR rendered. Edge labels are constrained within the viewport.
 - All original geometry is procedural. The world uses simple kinematics and approximate collision boundaries, not a full physics engine. Small props are decorative. Real-device GPU performance, every browser, and assistive-technology navigation have not been exhaustively tested.
 - No resume, achievements or donations were fabricated. No driving telemetry is uploaded.
+
+## Visitor walkthrough verification
+
+Verified the three chai counters, support links and QR image, changing a movement key, the overhead camera option, boarding and moving the boat with arrows, returning to the dock, riverside seating, the project résumé card, and the Qatar flight arrival with its guide and project link. Featured exhibits now link to local standalone articles. The sailing regression test checks bank clearance, bridges, obstacles and steering. The personal résumé is a project summary based on documented work.

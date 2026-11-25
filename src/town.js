@@ -19,7 +19,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   ribbon([...LAND,LAND[0]],2.4,0xc5b58a,.315);
   const riverPoints=[];for(let z=-90;z<=85;z+=.5)if(insideLand(riverX(z),z))riverPoints.push([riverX(z),z]);
   ribbon(riverPoints,BANK_HALF*2,0xc9b98d,.32);
-  const river=ribbon(riverPoints,RIVER_HALF*2,0x4c999e,.335);
+  const river=action(ribbon(riverPoints,RIVER_HALF*2,0x4c999e,.335),'river');
   for(const r of paths)ribbon(r.points,r.width,0xc9b893,.36);
   for(const r of roads){
     ribbon(r.points,r.width+1.3,0xb8ad8a,.37);ribbon(r.points,r.width,0x586260,roadY);
@@ -31,7 +31,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     box(world,b.length,.18,b.width,b.x,deckY-.09,b.z,0xa59579);
     action(box(world,b.length,.018,b.width-1,b.x,deckY+.01,b.z,0x66716a),'look:Bridge');
     for(const side of [-1,1]){
-      box(world,b.length,.15,.18,b.x,1.7,b.z+side*(b.width/2-.15),0xe7d5af);
+      action(box(world,b.length,.15,.18,b.x,1.7,b.z+side*(b.width/2-.15),0xe7d5af),'look:Bridge');
       for(let x=-b.length/2+.4;x<b.length/2;x+=2)box(world,.2,1.2,.25,b.x+x,1.1,b.z+side*(b.width/2-.15),0xb6a17f);
       obstacles.push({x:b.x,z:b.z+side*(b.width/2-.15),w:b.length,d:.18});
     }
@@ -69,7 +69,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   for(const t of scenery.trees)obstacles.push({x:t.x,z:t.z,r:.65*t.scale});
   for(const l of scenery.lamps){pole(l.x,l.z);const globe=new T.Mesh(new T.SphereGeometry(.2,8,6),new T.MeshStandardMaterial({color:0xffdfa1,emissive:0xffbd61,emissiveIntensity:.1}));globe.position.set(l.x,2.8,l.z);world.add(globe);action(globe,'look:Streetlight');lightMaterials.push(globe.material);obstacles.push({x:l.x,z:l.z,r:.25});}
 
-  function bench(x,z,rot=0){const g=group(x,z);g.rotation.y=rot;box(g,3,.22,.9,0,.7,0,0xa77b53);box(g,3,.75,.12,0,1.15,.4,0xa77b53);for(const a of [-1,1])box(g,.14,.65,.65,a,.33,0,0x44564a);g.children.forEach(m=>action(m,'bench'));obstacles.push({x,z,r:1.5});return g;}
+  function bench(x,z,rot=0){const g=group(x,z);g.rotation.y=rot;box(g,3,.22,.9,0,.7,0,0xa77b53);box(g,3,.75,.12,0,1.15,.4,0xa77b53);for(const a of [-1,1])box(g,.14,.65,.65,a,.33,0,0x44564a);g.children.forEach(m=>{m.userData.seat={x,z};action(m,'bench');});obstacles.push({x,z,r:1.5});return g;}
   // Named destinations have one source of coordinates and deliberately open frontages.
   const place=id=>locations.find(l=>l.id===id);
   const personal=group(place('personal').x,place('personal').z);
@@ -125,6 +125,9 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   }
   // Direction signs make the winding road network legible without tidying its shape.
   for(const [x,z,label]of [[-30,-25,'LAB / AIRPORT'],[49,-24,'CCP QUARTER'],[-24,36,'ARCADE / OLD TOWN'],[18,34,'RIVERSIDE']]){if(!canPlace(x,z,.5,obstacles))continue;cyl(world,.08,2.4,x,1.5,z,0x5c6856,.08,7);box(world,4,.8,.15,x,2.7,z,0x315b54);text(world,label,x,2.7,z+.1,3.7,'#e6dfbd');}
+  for(const vehicle of [travelCar,displayCar])vehicle.traverse(m=>{if(m.isMesh)action(m,'vehicle');});
+  for(const b of boats)b.g.traverse(m=>{if(m.isMesh&&!m.userData.action)action(m,'river');});
+  plane.traverse(m=>{if(m.isMesh&&!m.userData.action)action(m,'airport');});
   world.updateMatrixWorld(true);
   const registered=new Set(interactables);
   world.traverse(o=>{
@@ -132,7 +135,8 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     const pos=o.getWorldPosition(new T.Vector3());
     if(pos.y<.65)return;
     const closest=locations.reduce((a,b)=>Math.hypot(pos.x-a.x,pos.z-a.z)<Math.hypot(pos.x-b.x,pos.z-b.z)?a:b);
-    action(o,Math.hypot(pos.x-closest.x,pos.z-closest.z)<8?closest.id:'look:Streetlight');
+    const crossing=bridges.some(b=>Math.abs(pos.x-b.x)<=b.length/2&&Math.abs(pos.z-b.z)<=b.width/2);
+    action(o,crossing?'look:Bridge':Math.hypot(pos.x-closest.x,pos.z-closest.z)<8?closest.id:'look:Streetlight');
   });
   let sailing=false;
   let flight=null,elapsed=0,labActive=false,crewActive=false;
@@ -148,6 +152,8 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   }
   function blocked(x,z,margin=.4){return !terrainAllows(x,z,margin)||blockedByObjects(x,z,obstacles,margin);}
   function night(on){lightMaterials.forEach(m=>m.emissiveIntensity=on?2.7:.1);}
+  let lastStreetX=Infinity,lastStreetZ=Infinity,street='';
+  function roadName(x,z){if(Math.hypot(x-lastStreetX,z-lastStreetZ)>1){street=nearestRoad(x,z).road.name;lastStreetX=x;lastStreetZ=z;}return street;}
   const heightAt=(x,z)=>onBridge(x,z)?deckY+.03:.5;
-  return {boat:boats[1].g,setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName:(x,z)=>nearestRoad(x,z).road.name};
+  return {boat:boats[1].g,setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
 }
