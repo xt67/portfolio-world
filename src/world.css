@@ -14,3 +14,55 @@
 .island-route{display:grid;gap:4px}.island-route button{background:transparent;color:#38554b;border:1px solid #b8ba9c;border-radius:6px;padding:7px;text-align:left}.island-route [aria-current=step]{background:#d9ead4}
 .island-back{position:absolute;right:16px;top:16px;padding:12px}.island-guide{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#183e39dc;color:white;padding:8px 14px;border-radius:7px;text-align:center;font-size:13px}.flight-board em{font-size:13px;color:#c5d7c9}
 @media(max-width:650px){.island-card{inset:auto 8px 8px;width:auto;max-height:40dvh;padding:12px}.island-route{grid-template-columns:repeat(3,1fr)}.island-card p{margin:6px 0}.island-guide{display:none}.island-back{top:8px;right:8px}}
+dialog.wardrobe-dialog {
+  padding:0; width:min(810px,94vw); max-width:94vw; color:#282d36;
+  background:#f6f0e6; border:1px solid #d0c7b9; overflow:auto;
+}
+.wardrobe-dialog>.close {z-index:2}
+.wardrobe {display:grid; grid-template-columns:minmax(0,1.06fr) minmax(0,1fr)}
+.wardrobe-stage {
+  position:relative; min-height:440px; isolation:isolate;
+  background:radial-gradient(ellipse at 50% 70%,#657380 0,#424458 40%,#202434 80%);
+}
+.wardrobe-stage::before {
+  content:"";position:absolute;left:25%;bottom:12%;width:50%;height:5%;border-radius:50%;
+  background:#171c34;filter:blur(9px);opacity:.55;z-index:-1;
+}
+.wardrobe-stage canvas {position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.wardrobe-stage canvas:active {cursor:grabbing}
+.stage-buttons {position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.stage-buttons button {padding:.45rem .8rem;color:#f7f1ed;background:#283040ce;border:1px solid #9294a3;border-radius:18px;font-size:12px}
+.wardrobe-form {padding:42px 28px 26px;display:flex;flex-direction:column;gap:16px}
+.wardrobe-form h2 {font-size:32px;margin:0;letter-spacing:-.05em}
+.wardrobe-form fieldset {border:0;margin:0;padding:0;display:flex;gap:9px;flex-wrap:wrap}
+.wardrobe-form legend {margin-bottom:8px;color:#555968;font-size:13px}
+.wardrobe-form label {display:inline-flex;position:relative;cursor:pointer}
+.wardrobe-form input {position:absolute;opacity:0;width:1px;height:1px}
+.wardrobe-form input:focus-visible+span {outline:3px solid #306b89;outline-offset:3px}
+.style-row label {flex:1}
+.style-row span {display:grid;gap:3px;width:100%;border:1px solid #c6beb5;border-radius:8px;padding:9px;color:#3e414b}
+.style-row small {font-size:11px}.style-row input:checked+span {border-color:#484552;background:#e5dfe1;box-shadow:0 0 0 1px #484552}
+.color-row span {display:block;width:32px;height:32px;border-radius:50%;background:var(--swatch);border:2px solid #faf6ef;box-shadow:0 0 0 1px #bcb5ad}
+.color-row input:checked+span {box-shadow:0 0 0 2px #373747}
+.wardrobe-form .primary {align-self:start}
+.welcome .pick-look {padding:12px 16px;margin:8px 0}
+@media(max-width:600px) {
+  .wardrobe {grid-template-columns:1fr}.wardrobe-stage {min-height:0;height:clamp(215px,35dvh,320px)}
+  .wardrobe-form {padding:16px 20px;gap:11px}.wardrobe-form h2{font-size:25px}
+  .stage-buttons {bottom:7px}.stage-buttons button {padding:4px 9px}
+}
+.map-region {cursor:pointer}.map-region text {fill:#2c4445;font:bold 7px sans-serif;paint-order:stroke;stroke:#e4cfa7;stroke-width:1.5px}
+.island-card {width:min(340px,44vw);background:#faf3e5f2;box-shadow:0 5px 24px #1c333121}
+.island-card h1 {font-family:Georgia,serif;font-size:34px;font-weight:500;margin:.2em 0}
+.island-card h2 {font-size:15px;margin:.3em 0;color:#6e5145}
+.island-card details {border-top:1px solid #d6c8ae;padding-top:10px}
+.island-card summary {cursor:pointer;font-weight:bold}
+.field-activity {margin-top:9px;padding:12px;background:#e8deca;border-radius:8px}
+.field-activity h3 {font-size:16px;margin:0}.field-activity div {display:flex;flex-wrap:wrap;gap:6px}
+.field-activity input {width:100%;accent-color:#32665d}
+.field-activity button {padding:6px 11px;color:#fff;background:#375e55;border-radius:5px;border:0}
+.field-activity output {font-size:13px;display:block;margin-top:7px}
+@media(max-width:650px){.island-card {width:auto;max-height:46dvh}.island-card h1{font-size:24px}}
+.title-card h1 {font-size:clamp(27px,4vw,48px)}.title-card p {max-width:18ch}
+.atlas-name {background:#28454a;color:#fff1cf;border:1px solid #edd5a6}
+.title-card {color:#fff9e7;text-shadow:0 1px 6px #122b2c,0 0 16px #193434}

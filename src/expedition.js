@@ -1,97 +1,190 @@
+import * as T from 'three';
 import {journeys} from './journeys.js';
+import {addDestinationScenery} from './destination-scenery.js';
+import {finalActivities,startActivity} from './destination-activities.js';
 
-const stops=[[-9,5],[9,3],[0,-9]];
-const progress=new Map();
-export function completedStops(name){return progress.get(name)||0;}
-export function exploreDestination(W,name,returnHome){
-  const T=W.T, spec=journeys[name], scene=new T.Scene();
-  scene.background=new T.Color(spec.sky);
-  scene.add(new T.HemisphereLight(0xfff7db,0x6f7764,2.4));
-  const sun=new T.DirectionalLight(0xffebc8,2.7);sun.position.set(-12,24,15);scene.add(sun);
-  const camera=new T.PerspectiveCamera(46,1,.1,160);
+const regions=new Map();
+export function completedStops(name){return regions.get(name)?.done||0;}
+
+function landmark(region,feature) {
+  const layers=Array.from({length:3},()=>new T.Group());
+  region.add(...layers);
   const materials=new Map();
-  function mesh(geometry,color,x,y,z,parent=scene){
-    if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,flatShading:true}));
-    const m=new T.Mesh(geometry,materials.get(color));m.position.set(x,y,z);parent.add(m);return m;
+  function mesh(parent,geometry,color,x,y,z){
+    if(!materials.has(color))materials.set(color,new T.MeshStandardMaterial({color,roughness:.82,side:T.DoubleSide}));
+    const item=new T.Mesh(geometry,materials.get(color));
+    item.position.set(x,y,z);item.castShadow=item.receiveShadow=true;parent.add(item);return item;
   }
-  const box=(w,h,d,c,x,y,z,p)=>mesh(new T.BoxGeometry(w,h,d),c,x,y,z,p);
-  const cone=(base,top,h,c,x,y,z,n=8,p)=>mesh(new T.CylinderGeometry(top,base,h,n),c,x,y,z,p);
-  const ball=(r,c,x,y,z,p)=>mesh(new T.IcosahedronGeometry(r,1),c,x,y,z,p);
-  box(180,.2,180,0x58979c,0,-1.4,0);
-  cone(17.8,17.5,1.5,0xa79574,0,-.8,0,48);
-  cone(17.5,17.5,.15,spec.ground,0,-.05,0,48);
-  function palm(x,z){cone(.32,.19,3.6,0x947350,x,1.8,z);for(let i=0;i<6;i++){const a=i*Math.PI/3;const leaf=ball(1,0x5a9667,x+Math.sin(a)*.85,3.6,z+Math.cos(a)*.85);leaf.scale.set(.45,.36,1.35);leaf.rotation.y=a;}}
-  for(let i=0;i<14;i++){
-    const a=i*.449, x=Math.sin(a)*15,z=Math.cos(a)*15,h=2+(i*7%5);
-    if(spec.terrain==='mountain'||spec.terrain==='forest'){
-      cone(1.9,0,h, spec.terrain==='mountain'?0x767e76:0x548062,x,h/2,z,5);
-      if(spec.terrain==='mountain')cone(.7,0,h*.36,0xe4e4d5,x,h*.82,z,5);
-    } else if(spec.terrain==='sand'){if(i%3===0)palm(x,z);else {const dune=ball(1,0xdab77b,x,.15,z);dune.scale.set(2,.7,1.4);}}
-    else if(i%2===0){box(2,h,2,spec.accent,x,h/2,z);box(1.5,.25,1.5,0xf2dca8,x,h+.1,z);}
+  const box=(g,x,y,z,w,h,d,c)=>mesh(g,new T.BoxGeometry(w,h,d),c,x,y,z);
+  function spar(g,from,to,r,c){
+    const a=new T.Vector3(...from),b=new T.Vector3(...to),axis=b.clone().sub(a);
+    const beam=mesh(g,new T.CylinderGeometry(r,r,axis.length(),8),c,...a.clone().lerp(b,.5).toArray());
+    beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),axis.normalize());return beam;
   }
-  // The landmark changes at each work stop. Its finished state survives a return flight.
-  const landmark=new T.Group();scene.add(landmark);
-  const layers=[new T.Group(),new T.Group(),new T.Group()];layers.forEach(g=>landmark.add(g));
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const c=spec.accent, cream=0xf4deb5;let rotor=null,mover=null;
-  switch(spec.feature){
-    case 'dhow':
-      mover=landmark;box(7,.18,4,0x529f9e,0,.1,0);cone(1.3,1.6,1,0x77523c,0,.7,0,6,landmark).scale.x=2;
-      cone(.13,.1,4.8,0x7b6047,0,3,0,8,layers[0]);cone(1.6,0,2.8,cream,.75,3,0,3,layers[1]).scale.z=.12;break;
-    case 'falls':
-      for(let i=0;i<3;i++){box(2.4,1.6+i,2.5,0x7f877e,i*1.6-1.6,(1.6+i)/2,-i*.8);box(1.6,1.6+i,.16,0x74cbd2,i*1.6-1.6,(1.6+i)/2,1.3-i*.8,layers[2-i]);}break;
-    case 'steel':
-      box(7,.18,3,0x519ba6,0,.12,0);for(const x of [-3,3])box(.8,2,2,0x717a76,x,1,0,layers[0]);for(const z of [-.9,.9])box(7,.33,.28,c,0,2,z,layers[1]);box(7,.22,2.2,cream,0,2.25,0,layers[2]);break;
-    case 'flags':
-      for(let i=0;i<3;i++){cone(.12,.08,4,0x69594a,i*2-2,2,0);const flag=cone(.8,0,1.6,[0xe66a50,0xf1be53,0x659fbb][i],i*2-1.4,3.4,0,3,layers[i]);flag.rotation.z=-Math.PI/2;flag.scale.z=.15;}break;
-    case 'fort':
-      box(6,2,2,0xa67957,0,1,0);for(let i=0;i<3;i++){cone(1,1,3.5,c,i*2.7-2.7,1.75,0);ball(.58,0xffb144,i*2.7-2.7,3.9,0,layers[i]);}break;
-    case 'oasis':
-      cone(1.8,1.8,.6,0x9d865f,-2,.3,0);cone(1.5,1.5,.1,0x69bcc0,-2,.65,0,24,layers[0]);box(4,.14,.7,0x69bcc0,1,.15,0,layers[1]);palm(3,-1);ball(1.4,0x539867,3,4,-1,layers[2]).scale.y=.5;break;
-    case 'mill':
-      cone(2,1.25,4,cream,0,2,0);cone(1.65,0,1.6,c,0,4.8,0);rotor=new T.Group();rotor.position.set(0,3.3,1.5);layers[1].add(rotor);for(let i=0;i<4;i++){const a=i*Math.PI/2;box(.48,2,.13,0xa78158,-Math.sin(a),Math.cos(a),0,rotor).rotation.z=a;}ball(.36,c,0,3.3,1.6,layers[0]);break;
-    case 'skyline':
-      for(let i=0;i<3;i++){const h=3+i*2;box(1.8,h,1.6,c,i*2-2,h/2,0);for(let j=1;j<h;j+=1)box(1.4,.27,.1,0xffda83,i*2-2,j,.84,layers[i]);}break;
-    case 'tram':
-      mover=landmark;for(const z of [-.7,.7])box(10,.12,.12,0x555c56,0,.1,z);box(4,1.8,1.8,0x53766c,0,1.2,0,landmark);box(4.1,.65,1.85,c,0,.75,0,layers[0]);for(const x of [-1.3,0,1.3])box(.8,.55,.1,cream,x,1.6,.92,landmark);box(.12,1,.12,0x575653,0,2.5,0,layers[1]).rotation.z=-.35;break;
+  let sailboat=null;
+  if(feature==='dhow'){
+
+    for(let i=0;i<22;i++)box(region,-4.5+i*.43,.19,2.5,.405,.17,1.2,i%3===0?0x9b7455:0xab835c);
+    sailboat=new T.Group();sailboat.position.y=-1.41;region.add(sailboat);
+    const hull=new T.Shape();
+    hull.moveTo(-3.25,1.1);hull.quadraticCurveTo(-2.35,-.45,1.65,.05);hull.quadraticCurveTo(2.8,.35,3.35,1.32);hull.quadraticCurveTo(0,.55,-3.25,1.1);
+    mesh(sailboat,new T.ExtrudeGeometry(hull,{depth:1.05,bevelEnabled:true,bevelSize:.16,bevelThickness:.16,bevelSegments:3,steps:1}),0x654130,0,.14,-.525);
+    box(sailboat,0,.89,0,4.45,.14,1.05,0xad7951);
+    spar(sailboat,[-.5,.89,0],[-.33,4.8,0],.072,0x825639);
+    const line=mesh(layers[0],new T.TorusGeometry(.28,.06,7,24),0xddb877,-1.35,1.06,.1);line.rotation.x=Math.PI/2;
+    const fabric=new T.BufferGeometry();fabric.setAttribute('position',new T.Float32BufferAttribute([ -2.1,4.55,0, 1.83,3.65,0, .25,3,.32, 1.83,3.65,0,1.25,1.42,.02,.25,3,.32,1.25,1.42,.02,-2.1,4.55,0,.25,3,.32 ],3));fabric.computeVertexNormals();
+    mesh(layers[1],fabric,0xf1dab0,0,0,0);
+    spar(layers[1],[-2.17,4.59,0],[1.92,3.65,0],.045,0x765839);
+    spar(layers[1],[-2.05,4.55,0],[-2.45,1,.48],.016,0x7d654f);
+    sailboat.add(layers[0],layers[1]);
+    for(const x of [-4,-2,0,2,4])spar(region,[x,-2.8,2.55],[x,.23,2.55],.11,0x755842);
+  }else{
+
+    for(const x of [-3.1,3.1])box(layers[0],x,.6,0,.95,1.3,2.8,0x8e8170);
+    for(const z of [-1.14,1.14]){
+      box(layers[1],0,1.47,z,7.7,.33,.18,0x7c4542);
+      box(layers[1],0,2.85,z,7.7,.12,.14,0xaf6452);
+      for(let i=0;i<6;i++)spar(layers[1],[-3.8+i*1.27,i%2?2.85:1.47,z],[-2.53+i*1.27,i%2?1.47:2.85,z],.067,0xb56d59);
+    }
+    for(const side of [-1,1]){
+      const ramp=box(layers[2],side*4.65,.81,0,2.4,.12,2.2,0xae9679);ramp.rotation.z=-side*.70;
+    }
+    for(let i=0;i<24;i++) box(layers[2],-3.8+i*.33,1.57,0,.31,.12,2.2,i%3===0?0xbda181:0xaf967b);
   }
-  const markers=stops.map(([x,z],i)=>{
-    cone(1.3,1.3,.18,cream,x,.12,z,20);
-    const ring=mesh(new T.TorusGeometry(.65,.11,8,24),[0xf1ac55,0x8dc7b7,0xda8b71][i],x,1.4,z);
-    return ring;
-  });
-  const avatar=W.avatar.clone();avatar.visible=true;avatar.position.set(0,.1,9);scene.add(avatar);
-  const ui=document.createElement('section');ui.className='destination-ui';ui.setAttribute('aria-label',name+' island');
-  ui.innerHTML=`<div class="island-card"><small>BOARDING PASS · ${name}</small><h1>${spec.title}</h1><p>${spec.goal}</p><div class="island-route"></div><p role="status"></p><button class="primary island-act"></button></div><button class="glass island-back">Return flight · Home airport</button><div class="island-guide">Walk with your movement keys or arrows. Select a stop to walk there automatically.</div>`;
+  return {layers,sailboat,animate(t,done,ride){
+    if(sailboat&&done===3){
+      sailboat.position.x=ride===null?.16*Math.sin(t*.38):-19*Math.sin(Math.PI*ride)**2;
+      sailboat.rotation.z=.018*Math.sin(t*1.1);
+    }
+  }};
+}
+
+export function installDestinations(W){
+  for(const [name,spec] of Object.entries(journeys)){
+    const group=new T.Group();group.position.set(spec.center[0],0,spec.center[1]);W.world.add(group);
+    const scenery=addDestinationScenery(group,spec), work=landmark(group,spec.feature);
+    const markers=spec.route.map(([x,z],i)=>{
+      const marker=new T.Mesh(new T.OctahedronGeometry(.32),new T.MeshStandardMaterial({color:0xffc779,emissive:0xe49652,emissiveIntensity:.4}));
+      marker.position.set(x,1.45,z);group.add(marker);return marker;
+    });
+    work.layers.forEach(layer=>layer.visible=false);
+    regions.set(name,{group,scenery,...work,markers,done:0});
+  }
+}
+
+// A short detour around the central exhibit keeps click-to-walk routes out of its footprint.
+function walkRoute(x,z,to){
+  const clear=(a,b)=>{
+    const dx=b[0]-a[0],dz=b[1]-a[1],len=dx*dx+dz*dz;
+    const t=len?Math.max(0,Math.min(1,-(a[0]*dx+a[1]*dz)/len)):0;
+    return Math.hypot(a[0]+t*dx,a[1]+t*dz)>5;
+  };
+  const from=[x,z];
+  if(clear(from,to))return [to];
+  const ring=Array.from({length:12},(_,i)=>[6.7*Math.cos(i*Math.PI/6),6.7*Math.sin(i*Math.PI/6)]);
+  const nearest=point=>ring.reduce((best,p,i)=>Math.hypot(p[0]-point[0],p[1]-point[1])<Math.hypot(ring[best][0]-point[0],ring[best][1]-point[1])?i:best,0);
+  let index=nearest(from);const end=nearest(to),step=(end-index+12)%12<=6?1:-1,path=[ring[index]];
+  while(index!==end){index=(index+step+12)%12;path.push(ring[index]);}
+  return [...path,to];
+}
+
+function waterRoutes(feature,from,route){
+  const result=[];
+  for(const to of route){
+    const harbour=feature==='dhow',axis=harbour?1:0,along=1-axis;
+    const a=from[axis],b=to[axis];
+    if(a*b<0){
+      const at=from[along]+(to[along]-from[along])*a/(a-b);
+      if(!harbour||at<4.6){
+        const crossings=harbour?[-14,-7,5.8]:[-14,-7,7,13];
+        const via=crossings.reduce((best,k)=>Math.abs(at-k)<Math.abs(at-best)?k:best);
+        const bank=harbour?3.55:2.85;
+        for(const sign of [Math.sign(a),Math.sign(b)])result.push(harbour?[via,sign*bank]:[sign*bank,via]);
+      }
+    }
+    result.push(to);from=to;
+  }
+  return result;
+}
+
+export function exploreDestination(W,name,returnHome){
+  const region=regions.get(name),spec=journeys[name],{group,markers}=region;
+  const avatar=W.avatar;group.add(avatar);avatar.visible=true;avatar.position.set(name==='Jamshedpur'?3.5:0,.02,9);
+  W.marker.visible=false;
+  const ui=document.createElement('section');ui.className='destination-ui';ui.setAttribute('aria-label',name);
+  ui.innerHTML=`<div class="island-card"><small>RAYAN’S FIELD NOTES</small><h1>${name}</h1><h2>${spec.chapter}</h2><p>${spec.story}</p><details open><summary>${spec.title}</summary><p>${spec.goal}</p><div class="island-route"></div><p role="status"></p><button class="primary island-act"></button><div class="field-activity" hidden></div><button class="primary island-ride" hidden>Sail the dhow</button></details></div><button class="glass island-back">Fly home ↗</button><div class="island-guide">Drag to look around · Walk with the arrows or select a stop</div>`;
   document.body.append(ui);
-  const route=ui.querySelector('.island-route'),status=ui.querySelector('[role=status]'),act=ui.querySelector('.island-act');
-  let done=completedStops(name),target=null,elapsed=0,near=false;
-  const buttons=spec.stops.map(([label],i)=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>target=stops[i];route.append(b);return b;});
+  const route=ui.querySelector('.island-route'),status=ui.querySelector('[role=status]'),act=ui.querySelector('.island-act'),activity=ui.querySelector('.field-activity');
+  let path=[],elapsed=0,near=false,working=false,ride=null;
+  const rideButton=ui.querySelector('.island-ride');
+  function go(to){path=waterRoutes(spec.feature,[avatar.position.x,avatar.position.z],walkRoute(avatar.position.x,avatar.position.z,to));}
+  const buttons=spec.stops.map(([label],i)=>{
+    const b=document.createElement('button');b.textContent=label;
+    b.onclick=()=>{if(!working)go(spec.route[i]);};
+    route.append(b);return b;
+  });
   function paint(){
-    layers.forEach((g,i)=>g.visible=i<done);
-    buttons.forEach((b,i)=>{b.textContent=(i<done?'✓ ':'')+spec.stops[i][0];b.setAttribute('aria-current',i===done?'step':'false');});
-    act.hidden=done===3;act.disabled=!near;
+    const done=region.done;
+    region.layers.forEach((g,i)=>g.visible=i<done);
+    markers.forEach((m,i)=>m.visible=i===done);
+    buttons.forEach((b,i)=>{b.textContent=(i<done?'✓ ':'')+spec.stops[i][0];b.setAttribute('aria-current',i===done?'step':'false');b.disabled=working;});
+    rideButton.hidden=done!==3||!region.sailboat;
+    if(!rideButton.hidden)rideButton.textContent=ride===null?'Sail the dhow':'Return to the pier';
+    act.hidden=working||done===3;act.disabled=!near;
     if(done<3)act.textContent=near?spec.stops[done][1]:'Walk to '+spec.stops[done][0];
   }
-  function perform(){if(done>=3||!near)return;status.textContent=spec.stops[done][2];done++;progress.set(name,done);near=false;if(done===3)status.textContent=spec.reward+' · Island stamp earned';paint();}
+  function complete(){region.done++;status.textContent=region.done===3?spec.reward+' · Stamp earned':spec.stops[region.done-1][2];activity.hidden=true;working=false;near=false;paint();}
+  function perform(){
+    if(!near||working||region.done===3)return;
+    if(region.done<2){complete();return;}
+    working=true;paint();startActivity(activity,finalActivities[spec.feature],complete);
+  }
+  function disembark(){ride=null;avatar.position.set(0,.015,5.7);avatar.rotation.y=Math.PI;paint();}
+  rideButton.onclick=()=>{
+    if(ride!==null){disembark();return;}
+    path=[];ride=0;avatar.rotation.y=-Math.PI/2;paint();
+  };
   act.onclick=perform;ui.querySelector('.island-back').onclick=returnHome;
-  status.textContent=done===3?spec.reward+' · Island stamp earned':'First stop: '+spec.stops[done][0];paint();
+  status.textContent=region.done===3?spec.reward:'Select a stop to walk there.';paint();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   function tick(dt,keys,yaw,pitch,distance){
-    if(!reduced)elapsed+=dt;
+    elapsed+=dt;
     const axis=(a,b)=>Number(keys.has(a)||keys.has(b));
     let dx=axis('d','arrowright')-axis('a','arrowleft'),dz=axis('s','arrowdown')-axis('w','arrowup');
-    if(dx||dz){target=null;[dx,dz]=[dx*Math.cos(yaw)+dz*Math.sin(yaw),-dx*Math.sin(yaw)+dz*Math.cos(yaw)];}
-    else if(target){dx=target[0]-avatar.position.x;dz=target[1]-avatar.position.z;if(Math.hypot(dx,dz)<.2){dx=dz=0;target=null;}}
-    const len=Math.hypot(dx,dz);if(len){const x=avatar.position.x+dx/len*dt*6,z=avatar.position.z+dz/len*dt*6;if(Math.hypot(x,z)<16.4)avatar.position.set(x,.1,z);avatar.rotation.y=Math.atan2(dx,dz);}
-    const pos=avatar.position, here=done<3&&Math.hypot(pos.x-stops[done][0],pos.z-stops[done][1])<2.5;
+    const pos=avatar.position;
+    if(working||ride!==null){dx=dz=0;if(ride!==null){ride+=dt/11;if(ride>=1)disembark();}}
+    else if(dx||dz){path=[];[dx,dz]=[dx*Math.cos(yaw)+dz*Math.sin(yaw),-dx*Math.sin(yaw)+dz*Math.cos(yaw)];}
+    else if(path.length){dx=path[0][0]-pos.x;dz=path[0][1]-pos.z;if(Math.hypot(dx,dz)<.33){dx=dz=0;path.shift();}}
+    const len=Math.hypot(dx,dz);
+    if(len){const x=pos.x+dx/len*dt*6,z=pos.z+dz/len*dt*6,r=Math.hypot(x,z);const harbour=spec.feature==='dhow';
+      const channel=harbour?Math.abs(z)<2.9&&x<4.6:Math.abs(x)<2;
+      const lane=harbour?x:z,bridges=harbour?[-14,-7]:[-14,-7,7,13];
+      const crossing=bridges.some(at=>Math.abs(at-lane)<.98);
+      const deck=!harbour&&region.done===3&&Math.abs(z)<1&&Math.abs(x)<5.7;
+      if(deck)pos.set(x,1.64*Math.max(0,Math.min(1,(5.68-Math.abs(x))/1.92)),z);
+      else if(r<16.4&&r>4.6&&(!channel||crossing))pos.set(x,crossing&&channel?.13:.015,z);avatar.rotation.y=Math.atan2(dx,dz);}
+    const here=region.done<3&&Math.hypot(pos.x-spec.route[region.done][0],pos.z-spec.route[region.done][1])<2.6;
     if(near!==here){near=here;paint();}
-    markers.forEach((m,i)=>{m.visible=i>=done;m.rotation.y=elapsed;m.position.y=1.4+.18*Math.sin(elapsed*2+i);});
-    if(done===3){if(rotor)rotor.rotation.z=elapsed;if(mover)mover.position.x=2.3*Math.sin(elapsed*.7);}
-    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();const d=Math.min(50,Math.max(23,distance*.72));
-    camera.position.set(pos.x*.68+d*Math.cos(pitch)*Math.sin(yaw),d*Math.sin(pitch)+4,pos.z*.68+d*Math.cos(pitch)*Math.cos(yaw));camera.lookAt(pos.x*.68,1,pos.z*.68);
-    W.renderer.render(scene,camera);
+    const t=reduce?0:elapsed;
+    W.animateAvatar(t,len&&!reduce?1:0,false);
+    region.scenery(t,ride);region.animate(t,region.done,ride);
+    if(ride!==null)pos.set(region.sailboat.position.x-.8,-.45,.25);
+    markers.forEach(m=>{m.rotation.y=t*.8;m.position.y=1.5+.12*Math.sin(t*2);});
+    const focus=new T.Vector3(group.position.x+pos.x,pos.y+1.2,group.position.z+pos.z);
+    const d=Math.max(4,Math.min(distance,320));
+    W.camera.position.copy(focus).addScaledVector(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)),d);
+    W.camera.lookAt(focus);W.renderer.render(W.scene,W.camera);
   }
-  function point(event){const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(event.clientX/innerWidth*2-1,1-event.clientY/innerHeight*2),camera);const p=new T.Vector3();if(ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),0),p)&&Math.hypot(p.x,p.z)<16.4)target=[p.x,p.z];}
-  function dispose(){ui.remove();scene.remove(avatar);scene.traverse(o=>o.geometry?.dispose());materials.forEach(m=>m.dispose());}
-  return {tick,point,perform,dispose};
+  function point(event){
+    if(working||ride!==null)return;
+    const ray=new T.Raycaster();
+    ray.setFromCamera(new T.Vector2(event.clientX/innerWidth*2-1,1-event.clientY/innerHeight*2),W.camera);
+    const p=new T.Vector3();
+    if(ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),0),p)){
+      const x=p.x-group.position.x,z=p.z-group.position.z,r=Math.hypot(x,z);
+      if(r>5&&r<16.4)go([x,z]);
+    }
+  }
+  function dispose(){ui.remove();region.scenery(0,null);region.animate(0,region.done,null);W.world.add(avatar);W.marker.visible=true;}
+  return {tick,point,perform,dispose,get working(){return working;}};
 }
