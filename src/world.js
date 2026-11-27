@@ -1,6 +1,6 @@
 import {loadLook,saveLook,openWardrobe} from './wardrobe.js';
 import {journeys} from './journeys.js';
-import {installDestinations,exploreDestination,completedStops} from './expedition.js';
+import {installDestinations,exploreDestination} from './expedition.js';
 import {steerBoat} from './sailing.js';
 import QRCode from 'qrcode';
 import {createWorld,locations} from './world-scene.js';
@@ -83,8 +83,9 @@ let currentRegion='';
 const homeRunway=[18,-58];
 function startFlight(to){
   keys.clear();target=null;arrivalAction=null;overview=true;flightTo=to;departAt=performance.now();
-  const from=currentRegion?journeys[currentRegion].center:homeRunway;
-  const end=to==='home'?homeRunway:journeys[to].center;
+  const airstrip=name=>[journeys[name].center[0]-8,journeys[name].center[1]+16];
+  const from=currentRegion?airstrip(currentRegion):homeRunway;
+  const end=to==='home'?homeRunway:airstrip(to);
   W.town.fly(from,end,reduced?.35:4);
   document.body.classList.add('in-flight');
   const status=$('#flight-status');status.innerHTML=`Flying to ${to==='home'?'the home airport':to} <button class="primary">Land now</button>`;
@@ -93,7 +94,13 @@ function startFlight(to){
 function flyHome(){
   island?.dispose();island=null;document.body.classList.remove('off-island');startFlight('home');
 }
+function sharePlace(place){
+  const url=new URL(location.href);
+  if(place)url.searchParams.set('visit',place.toLowerCase());else url.searchParams.delete('visit');
+  history.replaceState(null,'',url);
+}
 function returnToAirport(){
+  sharePlace(null);
   island?.dispose();island=null;flightTo='';keys.clear();target=null;overview=false;
   document.body.classList.remove('off-island','in-flight');
   $('#flight-status').style.display='none';
@@ -103,18 +110,14 @@ function returnToAirport(){
 function land(){
   if(!flightTo)return;
   const destination=flightTo;flightTo='';keys.clear();
-  W.town.endFlight();document.body.classList.remove('in-flight');
+  W.town.endFlight(destination==='home'?null:[journeys[destination].center[0]-8,journeys[destination].center[1]+16]);document.body.classList.remove('in-flight');
   if(destination==='home'){returnToAirport();return;}
-  currentRegion=destination;yaw=.1;pitch=.29;distance=14;
+  currentRegion=destination;sharePlace(destination);yaw=.1;pitch=.29;distance=14;
   document.body.classList.add('off-island');$('#flight-status').style.display='none';
-  island=exploreDestination(W,destination,flyHome);
+  island=exploreDestination(W,destination,flyHome,(angle,tilt=.20,zoom=13)=>{yaw=angle;pitch=tilt;distance=zoom;});
 }
 function airport(){
   show(flightMarkup());
-  dialog.querySelectorAll('[data-flight]').forEach(button=>{
-    const count=completedStops(destinations[Number(button.dataset.flight)]);
-    if(count)button.querySelector('b').textContent=count===3?'✓ Stamped · Revisit':count+'/3 · Continue';
-  });
   dialog.querySelectorAll('[data-flight]').forEach(button=>button.onclick=()=>{
     const destination=destinations[Number(button.dataset.flight)];
     dialog.close();landBoat();if(touring)toggleVehicle();standUp();
@@ -145,7 +148,7 @@ $('#finish').onclick=finish;
 const controlled=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
 addEventListener('keydown',e=>{const key=mapKey(e.key.toLowerCase());if(dialog.open)return;
  if(flightTo){if(key==='enter')land();return;}
- if(island){if(island.working)return;if(controlled.includes(key)){e.preventDefault();keys.add(key);}if(key==='e'&&!e.repeat)island.perform();return;}
+ if(island){if(controlled.includes(key)){e.preventDefault();keys.add(key);}if(key==='e'&&!e.repeat)island.perform();return;}
  if(key==='escape'&&entered){e.preventDefault();help();return;}if(!entered)return;if(e.repeat&&!controlled.includes(key))return;if(controlled.includes(key)){standUp();e.preventDefault();keys.add(key);target=null;arrivalAction=null;$('#title-card').classList.add('hidden');}if(driving){if(key==='r')$('#reset-car').click();if(key==='escape')finish();}else{if(key==='e'&&nearby)openPlace(nearby.id);if(key==='m')menu();if(key==='c')toggleVehicle();if(key==='o')overview=!overview;}});
 addEventListener('keyup',e=>keys.delete(mapKey(e.key.toLowerCase())));addEventListener('blur',()=>keys.clear());document.addEventListener('visibilitychange',()=>keys.clear());
 document.querySelectorAll('[data-walk],[data-drive]').forEach(b=>{const key=b.dataset.walk||b.dataset.drive;b.onpointerdown=e=>{standUp();e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(key);target=null;arrivalAction=null;};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>keys.delete(key);});
@@ -158,7 +161,10 @@ const atlasLabels=Object.entries({...journeys,'Home neighbourhood':{center:[0,0]
   return {button,center:spec.center};
 });
 try{W=createWorld($('#world'),appearance);installDestinations(W);for(const [i,l]of locations.entries()){const button=document.createElement('button');button.className='place';button.innerHTML=`${l.name}`;button.onclick=()=>visit(l.id,true);$('#labels').append(button);hotspots.push({l,button});}document.querySelectorAll('[data-region]').forEach(el=>el.onclick=()=>visit('airport',true));document.querySelectorAll('[data-map]').forEach(el=>el.onclick=()=>visit(el.dataset.map,true));
- const ray=new W.T.Raycaster(),ground=new W.T.Plane(new W.T.Vector3(0,1,0),-.5);$('#world').addEventListener('pointerup',e=>{drag=null;if(island){if(!dragged)island.point(e);return;}if(flightTo)return;if(dragged||!entered||driving||dialog.open)return;ray.setFromCamera(new W.T.Vector2(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2),W.camera);const hits=ray.intersectObjects(W.interactables,false);const hit=hits.find(h=>visibleInWorld(h.object));if(hit){const id=hit.object.userData.action;if(sailing&&id!=='river')landBoat();if(id==='visitor'){customize();return;}if(id==='vehicle')toggleVehicle();else if(id==='drive')consent();else {if(id==='bench'){const pos=hit.object.userData.seat||hit.object.getWorldPosition(new W.T.Vector3());seatTarget={x:pos.x,z:pos.z};}openPlace(id);}return;}if(touring||sailing)return;const point=new W.T.Vector3();if(ray.ray.intersectPlane(ground,point)&&!W.town.blocked(point.x,point.z)){standUp();target={x:point.x,z:point.z};arrivalAction=null;$('#title-card').classList.add('hidden');}});requestAnimationFrame(frame);
+ const ray=new W.T.Raycaster(),ground=new W.T.Plane(new W.T.Vector3(0,1,0),-.5);$('#world').addEventListener('pointerup',e=>{drag=null;if(island){if(!dragged)island.point(e);return;}if(flightTo)return;if(dragged||!entered||driving||dialog.open)return;ray.setFromCamera(new W.T.Vector2(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2),W.camera);const hits=ray.intersectObjects(W.interactables,false);const hit=hits.find(h=>visibleInWorld(h.object));if(hit){const id=hit.object.userData.action;if(sailing&&id!=='river')landBoat();if(id==='visitor'){customize();return;}if(id==='vehicle')toggleVehicle();else if(id==='drive')consent();else {if(id==='bench'){const pos=hit.object.userData.seat||hit.object.getWorldPosition(new W.T.Vector3());seatTarget={x:pos.x,z:pos.z};}openPlace(id);}return;}if(touring||sailing)return;const point=new W.T.Vector3();if(ray.ray.intersectPlane(ground,point)&&!W.town.blocked(point.x,point.z)){standUp();target={x:point.x,z:point.z};arrivalAction=null;$('#title-card').classList.add('hidden');}});const wanted=new URLSearchParams(location.search).get('visit')?.toLowerCase();
+ const arrival=destinations.find(name=>name.toLowerCase()===wanted);
+ if(arrival){enter();flightTo=arrival;land();}
+ requestAnimationFrame(frame);
 }catch(error){console.error(error);$('#interface').innerHTML='<div class="fallback"><h1>Rayan Rahman / xt67</h1><p>Your browser could not start the 3D world. Enable hardware acceleration or try another WebGL-compatible browser. You can also explore the projects on GitHub.</p><a href="https://github.com/xt67">GitHub ↗</a></div>';}
 function frame(time){requestAnimationFrame(frame);const dt=document.hidden||pause?0:Math.min((time-last)/1000,.05);last=time;W.weather.tick(reduced?0:time/1000,W.camera);if(dialog.classList.contains('wardrobe-dialog'))return;if(island){island.tick(dt,keys,yaw,pitch,distance);return;}const {T,camera,avatar}=W;let moving=false;
  if(driving){const input={throttle:Number(keys.has('w')||keys.has('arrowup')),brake:Number(keys.has('s')||keys.has('arrowdown')),steer:Number(keys.has('a')||keys.has('arrowleft'))-Number(keys.has('d')||keys.has('arrowright'))};const old=game.state;game.state=stepCar(old,input,dt);const s=game.state;game.distance+=Math.hypot(s.x-old.x,s.z-old.z);game.elapsed+=dt;if(!s.offRoad)game.onRoad+=dt;game.clock+=dt;if(game.clock>=.1){game.clock-=.1;game.samples.push({time:Number(game.elapsed.toFixed(3)),...s,...input});}W.car.position.set(s.x,0,s.z);W.car.rotation.y=s.heading;const orbitRadius=distance*(innerWidth<700?.8:.65);const view=new T.Vector3(s.x+Math.sin(yaw)*Math.cos(pitch)*orbitRadius,Math.sin(pitch)*orbitRadius,s.z+Math.cos(yaw)*Math.cos(pitch)*orbitRadius);camera.position.lerp(view,reduced?1:1-Math.exp(-dt*5));camera.lookAt(s.x,0,s.z);$('#speed').textContent=(s.speed<0?'R ':'')+Math.round(Math.abs(s.speed)*3.6);$('#timer').textContent=Math.max(0,Math.ceil(45-game.elapsed));$('#drive-tip').textContent=s.offRoad?'Off track — steer back, or press R to reset':'↑ / W accelerate · ← → / A D steer · ↓ / S brake / reverse';if(game.elapsed>=45)finish();
@@ -191,7 +197,7 @@ function frame(time){requestAnimationFrame(frame);const dt=document.hidden||paus
  W.town.tick(driving||document.hidden?0:dt,reduced);
  if(flightTo){
    const plane=W.town.plane.position;
-   const view=new W.T.Vector3(plane.x+17,plane.y+14,plane.z+27);
+   const view=new W.T.Vector3(plane.x+9,plane.y+4.0,plane.z+10.8);
    W.camera.position.lerp(view,reduced?1:1-Math.exp(-dt*4));W.camera.lookAt(plane);
    if(time-departAt>(reduced?350:4000)){land();return;}
  }

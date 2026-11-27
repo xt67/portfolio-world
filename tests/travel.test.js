@@ -2,21 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {LAND} from '../src/navigation.js';
 import {journeys} from '../src/journeys.js';
-import {finalActivities} from '../src/destination-activities.js';
+import {existsSync} from 'node:fs';
 import {validatedLook} from '../src/wardrobe.js';
 import {createAvatar} from '../src/avatar.js';
 import {Box3} from 'three';
 
 test('both flight destinations sit offshore with water between each coast and the mainland',()=>{
   assert.deepEqual(Object.keys(journeys),['Qatar','Jamshedpur']);
-  for(const {center:[x,z],route,feature} of Object.values(journeys)){
+  for(const {center:[x,z],views,tea} of Object.values(journeys)){
     for(let i=0;i<LAND.length;i++){
       const [a,b]=LAND[i],[c,d]=LAND[(i+1)%LAND.length],dx=c-a,dz=d-b;
       const along=Math.max(0,Math.min(1,((x-a)*dx+(z-b)*dz)/(dx*dx+dz*dz||1)));
       assert.ok(Math.hypot(x-a-along*dx,z-b-along*dz)>44);
     }
-    assert.ok(route.every(([a,b])=>Math.hypot(a,b)>5&&Math.hypot(a,b)<16.4));
-    assert.ok(finalActivities[feature]);
+    assert.ok(views.length>=3);
+    for(const {image,spot} of views){
+      assert.ok(existsSync(new URL('../public/places/'+image+'.webp',import.meta.url)));
+      assert.ok(Math.hypot(...spot)<25);
+    }
+    assert.ok(Math.hypot(...tea.spot)<25);
   }
 });
 

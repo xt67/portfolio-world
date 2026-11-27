@@ -1,5 +1,7 @@
 # Rayan Rahman / XT67 Research Lab
 
+[Play the portfolio](https://portfolio-world-three.vercel.app/) · [Visit Qatar](https://portfolio-world-three.vercel.app/?visit=qatar) · [Visit Jamshedpur](https://portfolio-world-three.vercel.app/?visit=jamshedpur) · [GitHub](https://github.com/xt67/portfolio-world)
+
 An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Chai stalls offer optional support links and a downloadable project résumé is available in My Story.
 
 The interaction direction was inspired by the owner’s references, [Bruno Simon](https://bruno-simon.com/) and [Saurabh Mhatre](https://saurabhmhatreportfolio.netlify.app/). The island geometry, character, interface and code are original to this portfolio; no reference-site code or assets were copied.
@@ -27,13 +29,13 @@ AURORA content reflects its documented feasibility status, with publication expe
 
 ## Hosting
 
-Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm run build`, output `dist/`. No server secrets or API keys are required. The repository is https://github.com/xt67/portfolio-world. Keep deployment protection enabled for the private review stage. The historical Sites identity remains in `.openai/hosting.json`; it is not required by Vercel.
+Vercel builds this static project using `vercel.json`: Node 24, `npm ci`, `npm run build`, output `dist/`. No server secrets or API keys are required. The public production address follows the main branch. The historical Sites identity remains in `.openai/hosting.json`; it is not required by Vercel.
 
 ## Expanded world
 
 The current world includes a larger irregular coastline, roads, a river with bridges, houses, seating, boats, scattered trees, streetlights and decorative pedestrians. Press C to switch between walking and a touring car, O for the map, M for the destination menu and E to interact nearby. The touring car is separate from the consent-gated timed driving experience.
 
-The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The main neighbourhood, Qatar harbour and Jamshedpur steel quarter share one 3D map. Use Map or zoom out to see all three. The airport offers two short flights with first-person stories about Rayan’s childhood in Qatar and birthplace in Jamshedpur. Choose Character to customise an original anime-style traveller. The browser remembers the saved look. Walk with the arrows or select a work stop to walk there, then use the action button or E. Each three-stop activity changes the local landmark and earns an island stamp. Return flights reopen the board, which remembers progress during the current visit. Visitors can sail the rigged dhow in Qatar or walk the completed footbridge in Jamshedpur. The local architecture uses a generated illustration atlas of souq shopfronts, steelworks, Indian townhouses and Qatari courtyard homes. The arcade indexes public GitHub projects. Refresh the snapshot with node scripts/refresh-catalog.mjs. Press Escape for controls, camera settings and movement layouts. The riverside dock offers a sail between the southern bridge and the estuary.
+The personal pavilion presents About, Experience, Resume, Achievements and Future aim as cards. Missing personal details remain explicitly pending. The main neighbourhood, Qatar harbour and Jamshedpur steel quarter share one 3D map. Use Map or zoom out to see all three. The airport offers two short flights with first-person stories about Rayan’s childhood in Qatar and birthplace in Jamshedpur. Choose Character to customise an original anime-style traveller. The browser remembers the saved look. Visitors can wander, browse the supplied reference photographs, jump to their viewpoints, and stop for karak or chai. The high-wing single-engine plane is modelled after the airport reference photo. The local architecture uses a generated illustration atlas of souq shopfronts, steelworks, Indian townhouses and Qatari courtyard homes. The arcade indexes public GitHub projects. Refresh the snapshot with node scripts/refresh-catalog.mjs. Press Escape for controls, camera settings and movement layouts. The riverside dock offers a sail between the southern bridge and the estuary.
 
 ## Driving controls
 

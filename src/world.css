@@ -11,9 +11,8 @@
 .destination-ui button{pointer-events:auto;cursor:pointer}
 .island-card{position:absolute;top:18px;left:18px;width:min(310px,44vw);max-height:75dvh;overflow:auto;padding:18px;background:#fbf5e5ed;border:1px solid #cfbc97;border-radius:12px;pointer-events:auto}
 .island-card small{font-size:11px;letter-spacing:.12em}.island-card h1{font-size:24px;line-height:1.1;margin:8px 0}.island-card p{font-size:14px;line-height:1.4}
-.island-route{display:grid;gap:4px}.island-route button{background:transparent;color:#38554b;border:1px solid #b8ba9c;border-radius:6px;padding:7px;text-align:left}.island-route [aria-current=step]{background:#d9ead4}
 .island-back{position:absolute;right:16px;top:16px;padding:12px}.island-guide{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#183e39dc;color:white;padding:8px 14px;border-radius:7px;text-align:center;font-size:13px}.flight-board em{font-size:13px;color:#c5d7c9}
-@media(max-width:650px){.island-card{inset:auto 8px 8px;width:auto;max-height:40dvh;padding:12px}.island-route{grid-template-columns:repeat(3,1fr)}.island-card p{margin:6px 0}.island-guide{display:none}.island-back{top:8px;right:8px}}
+@media(max-width:650px){.island-card{inset:auto 8px 8px;width:auto;max-height:40dvh;padding:12px}.island-card p{margin:6px 0}.island-guide{display:none}.island-back{top:8px;right:8px}}
 dialog.wardrobe-dialog {
   padding:0; width:min(810px,94vw); max-width:94vw; color:#282d36;
   background:#f6f0e6; border:1px solid #d0c7b9; overflow:auto;
@@ -57,12 +56,15 @@ dialog.wardrobe-dialog {
 .island-card h2 {font-size:15px;margin:.3em 0;color:#6e5145}
 .island-card details {border-top:1px solid #d6c8ae;padding-top:10px}
 .island-card summary {cursor:pointer;font-weight:bold}
-.field-activity {margin-top:9px;padding:12px;background:#e8deca;border-radius:8px}
-.field-activity h3 {font-size:16px;margin:0}.field-activity div {display:flex;flex-wrap:wrap;gap:6px}
-.field-activity input {width:100%;accent-color:#32665d}
-.field-activity button {padding:6px 11px;color:#fff;background:#375e55;border-radius:5px;border:0}
-.field-activity output {font-size:13px;display:block;margin-top:7px}
 @media(max-width:650px){.island-card {width:auto;max-height:46dvh}.island-card h1{font-size:24px}}
 .title-card h1 {font-size:clamp(27px,4vw,48px)}.title-card p {max-width:18ch}
 .atlas-name {background:#28454a;color:#fff1cf;border:1px solid #edd5a6}
 .title-card {color:#fff9e7;text-shadow:0 1px 6px #122b2c,0 0 16px #193434}
+.postcard {max-height:min(72dvh,640px)}.postcard figure,.airport-photo {margin:12px 0 8px}
+.postcard figure img {width:100%;max-height:32vh;object-fit:contain;background:#253e42;border-radius:5px;display:block}
+.postcard figcaption,.airport-photo figcaption {color:#475e55;font-size:13px;margin-top:5px}
+.photo-controls,.tea-stop {display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.photo-controls button,.tea-stop button {padding:6px 10px}.photo-controls .page-count {font-size:12px}
+.tea-stop {margin-top:12px}.tea-stop span {font-size:12px}
+.airport-photo img {display:block;width:100%;max-height:170px;object-fit:cover;object-position:50% 45%;border-radius:8px}
+@media(max-width:650px){.postcard{max-height:44dvh}.postcard figure img{max-height:20vh}}

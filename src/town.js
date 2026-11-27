@@ -1,3 +1,4 @@
+import {buildAircraft} from './aircraft.js';
 import {createAvatar} from './avatar.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {plantPaintedTrees,paintHouse,paintTownGround} from './art-direction.js';
@@ -114,7 +115,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   for(let z=-72;z<-46;z+=4)box(world,.25,.03,1.8,18,.46,z,0xf1dfb4);
   box(world,11,3,4,airport.x,1.8,airport.z,0xd7d8bd);box(world,11.5,.25,4.6,airport.x,3.4,airport.z,0x92b6a8);text(world,'NEXT CHAPTER AIRPORT',airport.x,4.3,airport.z+2.2,12);text(world,'SCENIC FLIGHTS',airport.x,2.2,airport.z+2.1,8);
   obstacles.push({x:airport.x,z:airport.z,w:11,d:4},{x:18,z:-60,w:8,d:29});
-  const plane=new T.Group();world.add(plane);const fuselage=cyl(plane,.5,5,0,.6,0,0xede9d5,.28,16);fuselage.rotation.x=Math.PI/2;box(plane,6.2,.12,1,0,.65,.3,0xece7d2);box(plane,2.3,.12,.6,0,.8,-2,0x93b5aa);box(plane,.12,1,.8,0,1.2,-2,0xebba7b);box(plane,.65,.35,.9,0,.97,1.4,0x517c78);for(const x of [-.5,.5])sphere(plane,.2,x,.15,.5,0x31463e);plane.position.set(18,.6,-58);plane.rotation.y=Math.PI;action(fuselage,'airport');
+  const plane=buildAircraft();world.add(plane);plane.position.set(18,.46,-58);plane.rotation.y=Math.PI;
 
   function boat(base,color){const g=group(0,base,.65);const hull=cyl(g,1,2.8,0,0,0,color,.8,6);hull.rotation.x=Math.PI/2;box(g,1.2,.4,1.3,0,.35,0,0xeadabd);cyl(g,.035,2.5,0,1.2,0,0x6f6858,.035,6);const sail=new T.Mesh(new T.ConeGeometry(.9,1.8,3),mat(0xf3e7cd));sail.position.set(.2,1.7,0);sail.scale.z=.08;g.add(sail);action(hull,'river');return {g,base};}
   const boats=[boat(-7,0xc98261),boat(49,0x7296aa)];
@@ -155,7 +156,13 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   });
   let sailing=false;
   let flight=null,elapsed=0,labActive=false,crewActive=false;
-  function fly(from,to,duration){flight={from,to,duration,time:0};}
+  function fly(from,to,duration){
+    const [x,z]=from,[ex,ez]=to,groundA=x===18?.46:-.02,groundB=ex===18?.46:-.02;
+    const points=[[x,groundA,z],[x,groundA+.08,z-3.0],[x,groundA+1.35,z-7.5],
+      [x+(ex-x)*.23,14,z+(ez-z)*.23-8],[(x+ex)/2,22,(z+ez)/2],
+      [ex+(x-ex)*.19,12,ez+11],[ex,groundB+1.55,ez+5.4],[ex,groundB+.04,ez+2],[ex,groundB,ez]];
+    flight={curve:new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),duration,start:performance.now()};
+  }
   function activate(id){if(id==='lab')labActive=true;if(id==='ccp')crewActive=true;return id==='lab'?labActive:crewActive;}
   function tick(dt,reduced){
     elapsed+=dt;
@@ -163,10 +170,12 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     if(!reduced){experiment.rotation.y+=dt*(labActive?2:.15);dish.rotation.y+=dt*(labActive?.7:.03);cat.rotation.y=Math.sin(elapsed*.4)*.25;for(const p of people)p.g.rotation.y=Math.sin(elapsed*.2+p.i)*.3;}
     neon.emissiveIntensity=crewActive?2:.4;
     if(flight){
-      flight.time+=dt;
-      const t=Math.min(1,flight.time/flight.duration),u=t*t*(3-2*t),[x,z]=flight.from,[endX,endZ]=flight.to;
-      plane.position.set(x+(endX-x)*u,.65+19*Math.sin(Math.PI*t),z+(endZ-z)*u);
-      plane.rotation.y=Math.atan2(endX-x,endZ-z);plane.rotation.z=.13*Math.sin(2*Math.PI*t);
+      const t=Math.min(1,(performance.now()-flight.start)/(flight.duration*1000));
+      plane.userData.propeller.rotation.z+=dt*(reduced?0:68);
+      const f=t*t*(3-2*t),curve=flight.curve,dir=curve.getTangent(f);
+      plane.position.copy(curve.getPoint(f));plane.rotation.y=Math.atan2(dir.x,dir.z);
+      plane.rotation.x=-Math.asin(Math.max(-.23,Math.min(.23,dir.y)));
+      plane.rotation.z=.105*Math.sin(2*Math.PI*t);
     }
     return flight;
   }
@@ -175,5 +184,5 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   let lastStreetX=Infinity,lastStreetZ=Infinity,street='';
   function roadName(x,z){if(Math.hypot(x-lastStreetX,z-lastStreetZ)>1){street=nearestRoad(x,z).road.name;lastStreetX=x;lastStreetZ=z;}return street;}
   const heightAt=(x,z)=>onBridge(x,z)?deckY+.03:.5;
-  return {boat:boats[1].g,endFlight:()=>{flight=null;plane.position.set(18,.6,-58);plane.rotation.set(0,Math.PI,0);},setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
+  return {boat:boats[1].g,endFlight:park=>{flight=null;if(park)plane.position.set(park[0],-.02,park[1]);else plane.position.set(18,.46,-58);plane.rotation.set(0,Math.PI,0);},setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
 }

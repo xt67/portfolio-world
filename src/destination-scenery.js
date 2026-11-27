@@ -1,9 +1,10 @@
 import * as T from 'three';
+import {addCityLandmarks} from './city-landmarks.js';
 import {illustratedWall} from './art-direction.js';
 
 const palettes = {
-  dhow:{land:'#d3b189',path:'#ebd7ae',rock:'#b48b68'},
-  steel:{land:'#a49b73',path:'#ccb797',rock:'#887463'}
+  qatar:{land:'#d3b189',path:'#ebd7ae',rock:'#b48b68'},
+  jamshedpur:{land:'#a49b73',path:'#ccb797',rock:'#887463'}
 };
 
 function noise(x, z) {
@@ -73,15 +74,18 @@ function drawingKit() {
 }
 
 function terrain(scene,kind,palette,rng) {
-  const harbour=kind==='dhow', rings=78, segments=168;
+  const harbour=kind==='qatar', rings=78, segments=168;
   const bank=z=>-20.8+1.8*Math.sin(z*.12);
   const radius=a=>31+2.3*Math.sin(3*a+(harbour?.7:2))+1.4*Math.cos(5*a-.4)+.8*Math.sin(8*a);
   function height(x,z){
     const r=Math.hypot(x,z),limit=radius(Math.atan2(z,x)),coast=smooth(limit-5,limit,r);
     const interior=smooth(16,24,r)*(.68+.32*noise(x,z));
-    const basin=harbour?(1-smooth(2,3.45,Math.abs(z)))*(1-smooth(3.5,5,x)):(1-smooth(1.15,2.65,Math.abs(x)));
-    const inlet=Math.max(harbour?4.3*smooth(-.2,3.2,bank(z)-x):0,5.3*basin);
-    return -.075+interior-inlet-5.7*coast;
+    const marina=Math.hypot((x-15)/5.3,(z+6)/4.25);
+    const inlet=harbour?Math.max(4.3*smooth(-.2,3.2,bank(z)-x),3.7*(1-smooth(.72,1.04,marina))):0;
+    const drift=(xx,zz,w,d,h)=>h*Math.exp(-(((x-xx)/w)**2+((z-zz+.19*(x-xx))/d)**2));
+    const dunes=harbour?drift(8,4,8.7,3.8,2.1)+drift(2,17,10,3.3,2.4)+drift(-12,11,7.5,3.3,1.4):0;
+    const airstrip=(1-smooth(1.7,3.2,Math.abs(x+8)))*(1-smooth(5.4,7.0,Math.abs(z-18)));
+    return -.075+(interior+dunes-inlet-5.7*coast)*(1-airstrip);
   }
   const coords=[],colors=[],indices=[],color=new T.Color(),sand=new T.Color('#dec59d');
   for(let row=0;row<=rings;row++){
@@ -89,7 +93,8 @@ function terrain(scene,kind,palette,rng) {
       const angle=2*Math.PI*k/segments,r=radius(angle)*row/rings,x=r*Math.cos(angle),z=r*Math.sin(angle);
       const y=height(x,z);coords.push(x,y,z);
       color.set(palette.land).lerp(sand,smooth(.78,.96,row/rings)*.8);
-      color.multiplyScalar(.97+.026*noise(x,z)+rng()*.045);colors.push(color.r,color.g,color.b);
+      const ripple=harbour?.045*Math.sin(5.6*z+Math.sin(x*.7)+x*.5):0;
+      color.multiplyScalar(.97+.026*noise(x,z)+ripple+rng()*.045);colors.push(color.r,color.g,color.b);
       if(row>0){const j=row*segments+k,next=row*segments+(k+1)%segments;
         indices.push(j-segments,next,j,j-segments,next-segments,next);}
     }
@@ -97,7 +102,7 @@ function terrain(scene,kind,palette,rng) {
   const geometry=new T.BufferGeometry();
   geometry.setIndex(indices);geometry.setAttribute('position',new T.Float32BufferAttribute(coords,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();
   const material=new T.MeshStandardMaterial({vertexColors:true,roughness:1});
-  const mesh=new T.Mesh(geometry,material);mesh.receiveShadow=true;scene.add(mesh);
+  const mesh=new T.Mesh(geometry,material);mesh.name="island-ground";mesh.receiveShadow=true;scene.add(mesh);
   return {height,bank,materials:[material]};
 
 }
@@ -110,44 +115,11 @@ export function addDestinationScenery(scene,trip){
 
   const {shape,quad,beam}=kit;
   const b=(x,y,z,w,h,d,c,ry=0)=>shape('box',x,y,z,w,h,d,c,0,ry);
-  const stone=(x,y,z,w,h,d,c)=>shape('rock',x,y,z,w,h,d,c,0,rng()*4);
+
   const pole=(x,y,z,r,h,c)=>shape('pole',x,y,z,r,h,r,c);
   const leaf=(x,y,z,w,h,d,c,angle=0)=>shape('leaf',x,y,z,w,h,d,c,0,angle);
   const height=ground.height;
 
-  function path(points,width,col) {
-    const curve=new T.CatmullRomCurve3(points.map(([x,z])=>new T.Vector3(x,0,z)));
-    let oldLeft,oldRight;
-    for(let i=0;i<=36;i++){
-      const t=i/36,p=curve.getPoint(t),dir=curve.getTangent(t),w=width*(1+.045*Math.sin(i*.53))/2;
-      const left=[p.x-dir.z*w,.018,p.z+dir.x*w],right=[p.x+dir.z*w,.018,p.z-dir.x*w];
-      if(i&&height(p.x,p.z)>-.7)quad(oldLeft,left,right,oldRight,col);
-      oldLeft=left;oldRight=right;
-    }
-  }
-  const stops=trip.route;
-  // Existing foot crossings keep both banks connected while the landmark is being fitted.
-  const leaves=[];
-  for(const at of [-14,-7,7,13]){
-    if(kind==='dhow'&&at>0)continue;
-    const across=kind==='steel';
-    if(across){
-      for(let i=0;i<18;i++)b(-3.4+i*.4,.035,at,.389,.16,2.05,i%4===0?'#a38766':'#b79975');
-    }else{
-      for(const sign of [-1,1]){
-        const hinge=new T.Group();hinge.position.set(at,.035,sign*3.49);scene.add(hinge);
-        const deck=new T.Mesh(new T.BoxGeometry(2.05,.16,3.49),new T.MeshStandardMaterial({color:0xae906a,roughness:.9}));
-        deck.position.z=-sign*1.745;deck.castShadow=deck.receiveShadow=true;hinge.add(deck);leaves.push({hinge,sign});
-      }
-    }
-    for(const side of [-.97,.97])for(const bank of [-2.45,2.45]){
-      const x=across?bank:at+side,z=across?at+side:bank;
-      pole(x,-1.32,z,.12,2.78,'#796852');
-    }
-  }
-  // A loop follows the stations. The central workshop has its own apron.
-  path([[0,9],stops[0],stops[1],stops[2],[0,9]],1.65,pal.path);
-  path([[0,9],[1.2,6],[0,3]],1.3,pal.path);
   function tree(x,z,size,conifer=false) {
     const y=height(x,z),s=size;
     beam([x,y,z],[x+.12*s,y+2.2*s,z],.19*s,'#715e48');
@@ -182,7 +154,7 @@ export function addDestinationScenery(scene,trip){
   function plaster(x,z,w,d,h,colour){
     const y=height(x,z);
     b(x,y+h/2,z,w,h,d,colour);b(x,y+h,z,w+.25,.24,d+.25,colour);
-    const tile=kind==='dhow'?(x>13?'courtyard':'souq'):'townhouse';
+    const tile=kind==='qatar'?(x>13?'courtyard':'souq'):'townhouse';
     illustratedWall(scene,tile,x,y+h/2,z+d/2+.035,w,h);
     illustratedWall(scene,tile,x-w/2-.035,y+h/2,z,d,h,-Math.PI/2);
     illustratedWall(scene,tile,x+w/2+.035,y+h/2,z,d,h,Math.PI/2);
@@ -208,10 +180,10 @@ export function addDestinationScenery(scene,trip){
     }
     for(let i=0;i<3;i++){const z=-10+i*8;dhow(ground.bank(z)-4.3,z,.85+i*.12,-.8);}
   }
-  if(kind==='dhow'){
+  if(kind==='qatar'){
     quay();
-    for(let i=0;i<9;i++){
-      const x=-14+i*3.75,z=-17-(i%3)*1.1,h=2.5+rng()*2.5;
+    for(let i=0;i<4;i++){
+      const x=-18+i*1.05,z=-11+i*4.9,h=2.5+rng()*2.5;
       const top=plaster(x,z,3.9,4.7,h,['#d3ad83','#e2c49e','#c79b76'][i%3]);
       if(i%3===1){
         b(x,top+1.3,z,1.8,2.6,1.8,'#ddbe95');
@@ -221,22 +193,7 @@ export function addDestinationScenery(scene,trip){
       quad([x-1.8,2.1,z+2.4],[x+1.8,2.1,z+2.4],[x+1.85,1.73,z+4.1],[x-1.85,1.73,z+4.1],i%2?'#a76659':'#698e89');
     }
     [[-15,-10],[14,-11],[18,3],[-14,11],[19,12]].forEach(([x,z])=>palm(x,z,1.05));
-    // Low coastal shopfronts, shelves of rolled fabrics and shaded timber screens.
-    for(let i=0;i<4;i++){
-      const x=14+i*.7,z=-10+i*4.5,y=height(x,z);
-      plaster(x,z,3,4,2.9,'#d6af89');
-      for(let j=0;j<5;j++){
-        const zz=z-1.35+j*.66;
-        b(x-1.56,y+1.75,zz,.09,1.8,.14,'#815d48');
-        b(x-1.83,y+.68,zz,.75,.24,.48,['#aa6559','#678785','#bc965c'][j%3]);
-      }
-    }
-    for(const [x,z,h] of [[-6,-25,6],[1,-25,8.2],[6,-24,5.8],[9,-23,6.7]]){
-      const y=height(x,z);
-      shape('taper',x,y+h/2,z,1.15,h,1.2,'#82989c');
-      for(let j=1;j<h;j+=.62)pole(x,y+j,z,1.03,.095,'#bcc8bc');
-    }
-  } else if(kind==='steel'){
+  } else if(kind==='jamshedpur'){
     for(const [x,z,len] of [[-10,-21,11],[3,-23,9],[18,-15,6]]){
       const y=height(x,z);
       b(x,y+2.1,z,len,4.2,5.5,'#a06954');
@@ -266,11 +223,21 @@ export function addDestinationScenery(scene,trip){
     }
     for(const [x,z] of [[-14,9],[-16,3],[-13,-11],[9,15]])tree(x,z,1.28);
   }
-  const material=kit.finish(scene);
-  const animate=(_time,ride)=>{
-    const lift=ride==null?0:Math.min(1,ride*15,(1-ride)*15);
-    leaves.forEach(({hinge,sign})=>hinge.rotation.x=sign*lift*1.36);
-  };
-  animate.dispose=()=>{material.dispose();ground.materials.forEach(m=>m.dispose());};
-  return animate;
+  b(-8,-.06,18,2.9,.07,11,kind==='qatar'?'#ccb08a':'#9a946f');
+  for(const end of [13.1,22.9])for(const x of [-8.7,-8,-7.3])b(x,-.013,end,.16,.018,.67,'#e8dec6');
+  kit.finish(scene);
+  const blocks=addCityLandmarks(scene,trip,height);
+  if(kind==='qatar'){
+    blocks.push([-8,-14,4,2.3],[0,-22,18,3]);
+    for(let i=0;i<4;i++)blocks.push([-18+i*1.05,-11+i*4.9,2.2,2.5]);
+    blocks.push([15,-6,6.9,5.6]);
+  }else{
+    blocks.push([-10,-21,5.7,3.0],[3,-23,4.8,3.0],[18,-15,3.4,3.0],[0,-15,14,1.1]);
+    for(let i=0;i<4;i++)blocks.push([15+i*.7,-8+i*4.5,2.3,2.1]);
+  }
+  function walkable(x,z){
+    return Math.hypot(x,z)<25&&height(x,z)>-.85&&!blocks.some(([cx,cz,rx,rz])=>
+      rz ? Math.abs(x-cx)<rx+.23&&Math.abs(z-cz)<rz+.23 : Math.hypot(x-cx,z-cz)<rx+.23);
+  }
+  return {height,walkable};
 }
