@@ -4,8 +4,6 @@
 
 An explorable Three.js island portfolio featuring AURORA, AutoCar-Sim, CASS and Pune Air Quality Sentinel. Visitors walk with WASD/arrows, click the ground to move, use touch controls or jump to exhibits from the map and menu. The AutoCar garage contains a clickable PC leading to a separate driving circuit. Day/night lighting is available. The portfolio uses the 3D world only; the former simple view and its route have been removed. Social destinations belong to Rayan Rahman and were supplied by the owner. Chai stalls offer optional support links and a downloadable project résumé is available in My Story.
 
-The interaction direction was inspired by the owner’s references, [Bruno Simon](https://bruno-simon.com/) and [Saurabh Mhatre](https://saurabhmhatreportfolio.netlify.app/). The island geometry, character, interface and code are original to this portfolio; no reference-site code or assets were copied.
-
 ## Run locally
 
 Use Node.js 24 and npm:
