@@ -1,7 +1,8 @@
 import {loadLook,saveLook,openWardrobe} from './wardrobe.js';
 import {journeys} from './journeys.js';
 import {installDestinations,exploreDestination} from './expedition.js';
-import {steerBoat} from './sailing.js';
+import {MovementKeys,actionForKey,defaultBindings} from './movement.js';
+import {steerBoat,upstreamHeading,WATER_Y,riverLocation} from './sailing.js';
 import QRCode from 'qrcode';
 import {createWorld,locations} from './world-scene.js';
 import {projects,icons} from './content.js';
@@ -16,12 +17,19 @@ let sailing=false,boatState={x:riverX(49),z:49,heading:Math.PI},yaw=.27,pitch=.2
 const quotes=['A quiet moment can change the shape of a busy day.','Take the long way when you have time to notice it.','A small beginning is still a beginning.'];
 let cups=0;
 function standUp(){if(!seated)return;seated=false;for(let i=0;i<16;i++){const a=i*Math.PI/8,x=player.x+2.4*Math.cos(a),z=player.z+2.4*Math.sin(a);if(!W.town.blocked(x,z,.95)){player.x=x;player.z=z;break;}}}
-function landBoat(){if(!sailing)return;sailing=false;W.town.setSailing(false);$('#travel-mode').textContent='ON FOOT';player.x=24;player.z=46.6;$('#vehicle').textContent='Drive · C';}
-function help(){pause=true;show('<div class="eyebrow">Field guide</div><h2>Controls & settings</h2><p>Walk with WASD or the arrow keys, or tap the ground. Drag the scene to orbit. Scroll to zoom. E interacts, C switches transport, O opens the map and M opens destinations.</p><p>In a car, Up accelerates and Down brakes then reverses. At the riverside, board a boat and use Up/Down to sail and Left/Right to steer. C returns you to the dock.</p><label>Camera angle <select id="angle"><option>Street view</option><option>Overhead</option><option>Low angle</option></select></label><label> Movement keys <select id="layout"><option value="wasd">WASD + arrows</option><option value="zqsd">ZQSD + arrows</option></select></label><div class="actions"><button class="primary" id="resume-game">Resume</button></div>');$('#layout').value=layout;$('#layout').onchange=e=>{layout=e.target.value;bindings={...layouts[layout]};dialog.querySelector('fieldset')?.remove();configureKeys();};$('#angle').selectedIndex=pitch>1?1:pitch<.4?2:0;$('#angle').onchange=e=>pitch=[.62,1.25,.32][e.target.selectedIndex];$('#resume-game').onclick=()=>dialog.close();configureKeys();}
+function setBoatControls(on){
+  $('#interface').classList.toggle('sailing',on);
+  const names=on?['Sail forward','Turn boat left','Reverse boat','Turn boat right']:['Walk forward','Walk left','Walk back','Walk right'];
+  document.querySelectorAll('[data-walk]').forEach((b,i)=>b.setAttribute('aria-label',names[i]));
+  $('#vehicle').setAttribute('aria-pressed',String(on));
+  W.marker.visible=!on;
+}
+function landBoat(){if(!sailing)return;sailing=false;keys.clear();setBoatControls(false);W.town.setSailing(false);$('#travel-mode').textContent='ON FOOT';player.x=24;player.z=46.6;$('#vehicle').textContent='Drive · C';}
+function help(){pause=true;show('<div class="eyebrow">Field guide</div><h2>Controls & settings</h2><p>Walk with WASD or the arrow keys, or tap the ground. Drag the scene to orbit. Scroll to zoom. E interacts, C switches transport, O opens the map and M opens destinations.</p><p>In a car, Up accelerates and Down brakes then reverses. At the riverside, W or ↑ takes you forward along the river. S or ↓ reverses. A/D or ←/→ turn the bow left and right. Release the steering key to follow a bend. Both bridges have a clear channel beneath them. C returns you to the dock.</p><label>Camera angle <select id="angle"><option>Street view</option><option>Overhead</option><option>Low angle</option></select></label><label> Movement keys <select id="layout"><option value="wasd">WASD + arrows</option><option value="zqsd">ZQSD + arrows</option></select></label><div class="actions"><button class="primary" id="resume-game">Resume</button></div>');$('#layout').value=layout;$('#layout').onchange=e=>{layout=e.target.value;bindings={...layouts[layout]};customBindings=false;dialog.querySelector('fieldset')?.remove();configureKeys();};$('#angle').selectedIndex=pitch>1?1:pitch<.4?2:0;$('#angle').onchange=e=>pitch=[.62,1.25,.32][e.target.selectedIndex];$('#resume-game').onclick=()=>dialog.close();configureKeys();}
 let layout='wasd';
-const layouts={wasd:{w:'w',a:'a',s:'s',d:'d'},zqsd:{z:'w',q:'a',s:'s',d:'d'}};
+const layouts={wasd:defaultBindings,zqsd:{z:'w',q:'a',s:'s',d:'d'}};
 let bindings={...layouts.wasd};
-const mapKey=k=>bindings[k]||(['w','a','s','d'].includes(k)?'':k);
+let customBindings=false;
 function configureKeys(){
  const field=document.createElement('fieldset');
  field.innerHTML='<legend>Custom movement keys</legend><p>Select a direction, then press a letter. Arrow keys always work.</p>';
@@ -36,13 +44,13 @@ function configureKeys(){
      const displaced=bindings[k];
      delete bindings[previous];
      if(displaced&&displaced!==action)bindings[previous]=displaced;
-     bindings[k]=action;field.remove();configureKeys();dialog.querySelector('#resume-game').focus();
+     bindings[k]=action;customBindings=true;field.remove();configureKeys();dialog.querySelector('#resume-game').focus();
    };};field.append(button);
  }
  dialog.querySelector('.actions').before(field);
 }
 let seatTarget=null,seated=false;const stamps=new Set();let touring=false,overview=false,tourState={x:0,z:5,heading:Math.PI,speed:0};
-let W,entered=false,driving=false,night=false,nearby=null,target=null,arrivalAction=null,game=null,last=0;const keys=new Set(),player={x:0,z:5};const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const dialog=$('#detail');let focusBefore=null;
+let W,entered=false,driving=false,night=false,nearby=null,target=null,arrivalAction=null,game=null,last=0;const keys=new MovementKeys(),player={x:0,z:5};const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const dialog=$('#detail');let focusBefore=null;
 function show(html){keys.clear();tourState.speed=0;target=null;focusBefore=document.activeElement;dialog.innerHTML='<button class="close" aria-label="Close dialog">×</button>'+html;dialog.querySelector('.close').onclick=()=>dialog.close();if(!dialog.open)dialog.showModal();}
 dialog.addEventListener('close',()=>{keys.clear();if(focusBefore?.isConnected)focusBefore.focus();});
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
@@ -77,7 +85,7 @@ $('#passport').onclick=()=>{enter();passport();};
 function clan(id){show(clanMarkup(id));$('#clan-projects').onclick=()=>gallery(id==='lab'?'xt67-Lab':'Cat-Communist-Party-CCP');$('#clan-action').onclick=()=>{W.town.activate(id);stamp(id);dialog.close();};}
 function neighbourhood(id){
  if(['chai','tea2','tea3'].includes(id)){const stall=locations.find(l=>l.id===id);show(`<div class="eyebrow">${stall.name}</div><h2>One chai. Many ideas.</h2><p>“The best shortcut? Follow the lane past the arcade. The lab is up north; the cat crew is across the river.”</p><p>Take a moment at this little roadside stall before your next discovery.</p><button class="primary" id="tea-break">Drink a chai</button><details><summary>Support Rayan</summary><p><a target="_blank" rel="noopener" href="https://buymeacoffee.com/xt67">Buy Me a Coffee</a> · <a target="_blank" rel="noopener" href="https://xt67-lab.github.io/buymeachai/support.html?name=Rayan%20Rahman&amp;upi=onlystudies790-1%40oksbi">Buy Me a Chai</a></p><img src="/chai-upi.jpg" alt="UPI payment QR for Rayan Rahman" width="200"></details>`);$('#tea-break').onclick=()=>{stamp('chai');$('#tea-break').textContent=`You drank a chai at ${stall.name} · ${++cups} ${cups===1?'cup':'cups'} this visit`;$('#tea-break').disabled=true;$('#tea-break').insertAdjacentHTML('beforebegin','<div class="tea-sip" aria-label="Sipping chai">☕</div>');};
- }else{show(`<div class="eyebrow">Riverside steps</div><h2>A little pause.</h2><p>Watch the boats drift down the river. Sit by the water, then use any movement key to continue exploring.</p><button class="primary" id="sit">Sit by the river</button> <button class="secondary" id="sail">Sail a boat</button>`);$('#sail').onclick=()=>{if(touring)toggleVehicle();sailing=true;seated=false;boatState={x:riverX(49),z:49,heading:Math.PI};W.town.setSailing(true);$('#vehicle').textContent='Return to dock · C';stamp('river');dialog.close();};$('#sit').onclick=()=>{stamp('river');if(touring)toggleVehicle();seated=true;seatTarget={x:22,z:42};player.x=22;player.z=42;dialog.close();};}
+ }else{show(`<div class="eyebrow">Riverside steps</div><h2>A little pause.</h2><p>Watch the boats drift down the river. Sit by the water, then use any movement key to continue exploring.</p><button class="primary" id="sit">Sit by the river</button> <button class="secondary" id="sail">Sail a boat</button>`);$('#sail').onclick=()=>{if(touring)toggleVehicle();sailing=true;seated=false;boatState={x:riverX(49),z:49,heading:upstreamHeading(49)};player.x=boatState.x;player.z=boatState.z;yaw=boatState.heading+Math.PI;overview=false;pitch=.29;target=null;arrivalAction=null;keys.clear();setBoatControls(true);W.town.setSailing(true);$('#vehicle').textContent='Return to dock · C';stamp('river');dialog.close();};$('#sit').onclick=()=>{stamp('river');if(touring)toggleVehicle();seated=true;seatTarget={x:22,z:42};player.x=22;player.z=42;dialog.close();};}
 }
 let currentRegion='';
 const homeRunway=[18,-58];
@@ -146,12 +154,12 @@ function download(data,type,name){const u=URL.createObjectURL(new Blob([data],{t
 function finish(){if(!driving)return;driving=false;keys.clear();W.track.visible=false;W.world.visible=true;$('#interface').classList.remove('driving');const session={...makeSession(game.samples,game.elapsed),resets:game.resets};const metres=Math.round(game.distance),score=game.elapsed?Math.round(game.onRoad/game.elapsed*100):0;show(`<div class="eyebrow">Experience complete / AutoCar</div><h2>You took the wheel.</h2><p>Thanks for exploring the human side of autonomous driving.</p><div class="stats"><div><b>${metres} m</b><small>Simulated distance</small></div><div><b>${score}%</b><small>Time on track</small></div></div><p class="notice">${game.elapsed.toFixed(1)} seconds of play. No data was uploaded and no real model was trained. Your certificate recognises participation in this portfolio experience.</p><div class="actions"><button class="primary" id="certificate">Download certificate ↓</button><button class="secondary" id="export">Export session ↓</button><button class="secondary" id="again">Drive again ↗</button></div>`);$('#again').onclick=consent;$('#export').onclick=()=>download(JSON.stringify(session,null,2),'application/json',`xt67-session-${session.id}.json`);$('#certificate').onclick=()=>{const date=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',dateStyle:'long'}).format(new Date());const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#173e43"/><rect x="35" y="35" width="1130" height="730" rx="12" fill="none" stroke="#f3c77e"/><g font-family="Arial,sans-serif" text-anchor="middle"><text x="600" y="140" fill="#f3c77e" font-size="22" letter-spacing="5">RAYAN RAHMAN / XT67</text><text x="600" y="275" fill="#f3f0de" font-size="55">Certificate of participation</text><text x="600" y="345" fill="#bdd2c4" font-size="24">Awarded to a curious driver</text><text x="600" y="420" fill="#f3f0de" font-size="25">For exploring the AutoCar browser driving experience</text><text x="600" y="475" fill="#f3c77e" font-size="25">${metres} simulated metres · ${game.elapsed.toFixed(1)} seconds · ${score}% on track</text><text x="600" y="560" fill="#bdd2c4" font-size="19">A little world. A lot of curiosity.</text><text x="600" y="595" fill="#bdd2c4" font-size="16">Participation only. This does not certify research contribution or real model training.</text><text x="600" y="675" fill="#bdd2c4" font-size="15">${date} · Session ${session.id}</text><text x="600" y="715" fill="#f3c77e" font-size="18">github.com/xt67</text></g></svg>`;download(svg,'image/svg+xml',`xt67-participation-${session.id}.svg`);};}
 $('#finish').onclick=finish;
 const controlled=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
-addEventListener('keydown',e=>{const key=mapKey(e.key.toLowerCase());if(dialog.open)return;
+addEventListener('keydown',e=>{if(dialog.open||e.ctrlKey||e.metaKey||e.altKey||e.isComposing)return;const key=actionForKey(e,bindings,layout==='wasd'&&!customBindings);
  if(flightTo){if(key==='enter')land();return;}
- if(island){if(controlled.includes(key)){e.preventDefault();keys.add(key);}if(key==='e'&&!e.repeat)island.perform();return;}
- if(key==='escape'&&entered){e.preventDefault();help();return;}if(!entered)return;if(e.repeat&&!controlled.includes(key))return;if(controlled.includes(key)){standUp();e.preventDefault();keys.add(key);target=null;arrivalAction=null;$('#title-card').classList.add('hidden');}if(driving){if(key==='r')$('#reset-car').click();if(key==='escape')finish();}else{if(key==='e'&&nearby)openPlace(nearby.id);if(key==='m')menu();if(key==='c')toggleVehicle();if(key==='o')overview=!overview;}});
-addEventListener('keyup',e=>keys.delete(mapKey(e.key.toLowerCase())));addEventListener('blur',()=>keys.clear());document.addEventListener('visibilitychange',()=>keys.clear());
-document.querySelectorAll('[data-walk],[data-drive]').forEach(b=>{const key=b.dataset.walk||b.dataset.drive;b.onpointerdown=e=>{standUp();e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(key);target=null;arrivalAction=null;};b.onpointerup=b.onpointercancel=b.onlostpointercapture=()=>keys.delete(key);});
+ if(island){if(controlled.includes(key)){e.preventDefault();keys.press(e.code||e.key,key);}if(key==='e'&&!e.repeat)island.perform();return;}
+ if(key==='escape'&&entered){e.preventDefault();help();return;}if(!entered)return;if(e.repeat&&!controlled.includes(key))return;if(controlled.includes(key)){overview=false;standUp();e.preventDefault();keys.press(e.code||e.key,key);target=null;arrivalAction=null;$('#title-card').classList.add('hidden');}if(driving){if(key==='r')$('#reset-car').click();if(key==='escape')finish();}else{if(key==='e'&&nearby)openPlace(nearby.id);if(key==='m')menu();if(key==='c')toggleVehicle();if(key==='o')overview=!overview;}});
+addEventListener('keyup',e=>keys.release(e.code||e.key));addEventListener('blur',()=>keys.clear());document.addEventListener('visibilitychange',()=>keys.clear());
+document.querySelectorAll('[data-walk],[data-drive]').forEach(b=>{const key=b.dataset.walk||b.dataset.drive;b.onpointerdown=e=>{standUp();e.preventDefault();b.setPointerCapture(e.pointerId);overview=false;keys.press('touch'+e.pointerId,key);target=null;arrivalAction=null;};b.onpointerup=b.onpointercancel=b.onlostpointercapture=e=>keys.release('touch'+e.pointerId);});
 function visibleInWorld(object){for(let node=object;node;node=node.parent)if(!node.visible)return false;return true;}
 const hotspots=[];
 const atlasLabels=Object.entries({...journeys,'Home neighbourhood':{center:[0,0]}}).map(([name,spec])=>{
@@ -179,10 +187,27 @@ function frame(time){requestAnimationFrame(frame);const dt=document.hidden||paus
    tourState={...next,x:player.x,z:player.z};
    $('#travel-mode').textContent=`DRIVING · ${next.speed<0?'R ':''}${Math.round(Math.abs(next.speed)*3.6)} SIM KM/H`;
   }
-  if(sailing&&!dialog.open){const key=(a,b)=>Number(keys.has(a)||keys.has(b));boatState=steerBoat(boatState,key('w','arrowup')-key('s','arrowdown'),key('a','arrowleft')-key('d','arrowright'),dt,W.obstacles);player.x=boatState.x;player.z=boatState.z;W.town.boat.position.set(player.x,.65,player.z);W.town.boat.rotation.y=boatState.heading;avatar.rotation.y=boatState.heading;$('#travel-mode').textContent='SAILING · C to dock';}
+  if(sailing&&!dialog.open){
+    const held=(a,b)=>Number(keys.has(a)||keys.has(b)),previous=boatState.heading;
+    boatState=steerBoat(boatState,held('w','arrowup')-held('s','arrowdown'),held('a','arrowleft')-held('d','arrowright'),dt,W.town.waterObstacles);
+    player.x=boatState.x;player.z=boatState.z;
+    if(!drag)yaw+=boatState.heading-previous;
+    W.town.boat.position.set(player.x,WATER_Y,player.z);W.town.boat.rotation.y=boatState.heading;
+    avatar.rotation.y=boatState.heading;
+    $('#travel-mode').textContent='SAILING · W / S forward & reverse · A / D steer';
+  }
   avatar.visible=!touring;W.town.travelCar.visible=touring;W.town.travelCar.position.set(player.x,W.town.heightAt(player.x,player.z),player.z);W.town.travelCar.rotation.y=tourState.heading;
-  avatar.position.set(player.x,W.town.heightAt(player.x,player.z)+(sailing?.8:seated?.18:0),player.z);W.marker.position.set(player.x,W.town.heightAt(player.x,player.z)+.01,player.z);W.animateAvatar(reduced?0:time/1000,moving&&!reduced?1:0,seated);W.destination.visible=!!target;if(target)W.destination.position.set(target.x,.51,target.z);
-  const zoom=innerWidth<700?1.4:1;const focus=entered&&!overview?new T.Vector3(player.x,W.town.heightAt(player.x,player.z)+1,player.z):new T.Vector3(0,0,-31);const offset=entered&&!overview?new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(distance*zoom):new T.Vector3(0,1,.8).normalize().multiplyScalar(Math.max(240,256/W.camera.aspect)*1.48);if(!flightTo)camera.position.lerp(focus.clone().add(offset),reduced?1:1-Math.exp(-dt*3));camera.lookAt(focus);nearby=locations.find(l=>Math.hypot(player.x-l.x,player.z-l.z)<7);$('#area').textContent=nearby?nearby.name:(Math.abs(player.x)<8&&Math.abs(player.z)<8?'Arrival plaza':W.town.roadName(player.x,player.z));$('#nearby').style.display=nearby&&entered&&!dialog.open?'block':'none';if(nearby)$('#nearby').textContent=`E · ${nearby.id==='autocar'?'Explore the garage':`Explore ${nearby.name}`} ↗`;$('#map-player').setAttribute('cx',player.x);$('#map-player').setAttribute('cy',player.z);
+  if(sailing)avatar.position.set(player.x-.56*Math.sin(boatState.heading),WATER_Y-.245,player.z-.56*Math.cos(boatState.heading));
+  else avatar.position.set(player.x,W.town.heightAt(player.x,player.z)+(seated?.18:0),player.z);
+  W.marker.position.set(player.x,W.town.heightAt(player.x,player.z)+.01,player.z);
+  W.animateAvatar(reduced?0:time/1000,moving&&!reduced?1:0,seated||sailing);W.destination.visible=!!target;if(target)W.destination.position.set(target.x,.51,target.z);
+  const zoom=innerWidth<700?1.4:1;const focus=entered&&!overview?new T.Vector3(player.x,sailing?WATER_Y+.90:W.town.heightAt(player.x,player.z)+1,player.z):new T.Vector3(0,0,-31);const offset=entered&&!overview?new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(distance*zoom):new T.Vector3(0,1,.8).normalize().multiplyScalar(Math.max(240,256/W.camera.aspect)*1.48);if(sailing&&!overview){
+    // Keep the lens in the channel while passing beneath a deck, including on approach.
+    const gap=Math.min(...bridges.map(b=>Math.abs(player.z-b.z)-b.width/2));
+    const near=1-T.MathUtils.smoothstep(gap,3,18);
+    offset.lerp(new T.Vector3(Math.sin(yaw)*3.15,.48,Math.cos(yaw)*3.15),near);
+  }
+  if(!flightTo)camera.position.lerp(focus.clone().add(offset),reduced?1:1-Math.exp(-dt*3));camera.lookAt(focus);nearby=locations.find(l=>Math.hypot(player.x-l.x,player.z-l.z)<7);$('#area').textContent=sailing?riverLocation(player.z):nearby?nearby.name:(Math.abs(player.x)<8&&Math.abs(player.z)<8?'Arrival plaza':W.town.roadName(player.x,player.z));$('#nearby').style.display=nearby&&entered&&!dialog.open?'block':'none';if(nearby)$('#nearby').textContent=`E · ${nearby.id==='autocar'?'Explore the garage':`Explore ${nearby.name}`} ↗`;$('#map-player').setAttribute('cx',player.x);$('#map-player').setAttribute('cy',player.z);
   const atlas=entered&&(overview||distance>125);
   const clip=atlas?2:.18;
   if(camera.near!==clip){camera.near=clip;camera.updateProjectionMatrix();}

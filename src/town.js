@@ -1,11 +1,13 @@
+import {makeRiverBoat} from './river-boat.js';
+import {WATER_Y,upstreamHeading} from './sailing.js';
 import {buildAircraft} from './aircraft.js';
 import {createAvatar} from './avatar.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {plantPaintedTrees,paintHouse,paintTownGround} from './art-direction.js';
-import {LAND,riverX,RIVER_HALF,BANK_HALF,bridges,roads,paths,locations,insideLand,terrainAllows,onBridge,blockedByObjects,makeScenery,nearestRoad,canPlace} from './navigation.js';
+import {LAND,riverX,RIVER_HALF,BANK_HALF,bridges,bridgeDeckHeight,bridgePiers,roads,paths,locations,insideLand,terrainAllows,blockedByObjects,makeScenery,nearestRoad,canPlace} from './navigation.js';
 
 export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,mat,interactables}) {
-  const groundY=.3,roadY=.43,deckY=.51;
+  const roadY=.43;
   function group(x,z,y=.3){const g=new T.Group();g.position.set(x,y,z);world.add(g);return g;}
   function action(object,id){object.userData.action=id;interactables.push(object);return object;}
   function ribbon(points,width,color,y){
@@ -26,21 +28,47 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   const river=action(ribbon(riverPoints,RIVER_HALF*2,0x4c999e,.335),'river');
   for(const r of paths)ribbon(r.points,r.width,0xc9b893,.36);
   for(const r of roads){
+    const bridge=bridges.find(b=>r.points.every(([,z])=>z===b.z));
+    if(bridge){
+      for(const sign of [-1,1]){
+        const edge=bridge.x+sign*bridge.length/2;
+        ribbon([[edge,bridge.z],[bridge.x+sign*14,bridge.z]],r.width+1.3,0xb8ad8a,.37);
+        ribbon([[edge,bridge.z],[bridge.x+sign*14,bridge.z]],r.width,0x586260,roadY);
+      }
+      continue;
+    }
     ribbon(r.points,r.width+1.3,0xb8ad8a,.37);ribbon(r.points,r.width,0x586260,roadY);
     // A continuous strip joins every bend; markings share the same centreline.
     if(r.width>=5)for(let i=3;i<r.points.length-2;i+=5){const [x,z]=r.points[i],b=r.points[i+1];const dash=box(world,.13,.018,1.6,x,.455,z,0xe8d6a7);dash.rotation.y=Math.atan2(b[0]-x,b[1]-z);}
   }
+  const deckRails=new Set(),underDeck=new Set();
   for(const b of bridges){
-    // A flush deck extends beyond both full-width banks, with rails outside traffic.
-    box(world,b.length,.18,b.width,b.x,deckY-.09,b.z,0xa59579);
-    action(box(world,b.length,.018,b.width-1,b.x,deckY+.01,b.z,0x66716a),'look:Bridge');
-    for(const side of [-1,1]){
-      action(box(world,b.length,.15,.18,b.x,1.7,b.z+side*(b.width/2-.15),0xe7d5af),'look:Bridge');
-      for(let x=-b.length/2+.4;x<b.length/2;x+=2)box(world,.2,1.2,.25,b.x+x,1.1,b.z+side*(b.width/2-.15),0xb6a17f);
-      obstacles.push({x:b.x,z:b.z+side*(b.width/2-.15),w:b.length,d:.18});
+    function strip(x0,x1,yOffset,h,width,z,color){
+      const y0=bridgeDeckHeight(b,x0),y1=bridgeDeckHeight(b,x1);
+      const part=box(world,Math.hypot(x1-x0,y1-y0)+.012,h,width,(x0+x1)/2,(y0+y1)/2+yOffset,z,color);
+      part.rotation.z=Math.atan2(y1-y0,x1-x0);
+      action(part,'look:Bridge');
     }
-    for(const dx of [-8,8])for(const dz of [-2.7,2.7])box(world,.7,2,.7,b.x+dx,-.5,b.z+dz,0x8e8c77);
-    for(let dx=-10;dx<=10;dx+=4)box(world,1.7,.025,.13,b.x+dx,deckY+.03,b.z,0xf0dcaa);
+    const left=b.x-b.length/2;
+    for(let i=0;i<25;i++){
+      const x=left+i;
+      strip(x,x+1,-.12,.24,b.width,b.z,0xad9677);
+      strip(x,x+1,.007,.014,b.width-.65,b.z,0x646e6c);
+      if(i%4===0)strip(x,x+1,.022,.015,.12,b.z,0xf0dcaa);
+      for(const side of [-1,1]){
+        const z=b.z+side*(b.width/2-.15);
+        strip(x,x+1,1.05,.12,.14,z,0xe4d4b3);
+        if(i%2===0)box(world,.14,1.01,.16,x,bridgeDeckHeight(b,x)+.5,z,0xab926f);
+      }
+    }
+    for(const sign of [-1,1]){
+      const rail={x:b.x,z:b.z+sign*(b.width/2-.15),w:b.length,d:.18};
+      obstacles.push(rail);deckRails.add(rail);
+    }
+    for(const pier of bridgePiers(b)){
+      const h=bridgeDeckHeight(b,pier.x)-.19;
+      box(world,pier.w,h,pier.d,pier.x,h/2,pier.z,0x95856f);underDeck.add(pier);obstacles.push(pier);
+    }
   }
 
   const scenery=makeScenery(),lightMaterials=[];
@@ -117,8 +145,12 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   obstacles.push({x:airport.x,z:airport.z,w:11,d:4},{x:18,z:-60,w:8,d:29});
   const plane=buildAircraft();world.add(plane);plane.position.set(18,.46,-58);plane.rotation.y=Math.PI;
 
-  function boat(base,color){const g=group(0,base,.65);const hull=cyl(g,1,2.8,0,0,0,color,.8,6);hull.rotation.x=Math.PI/2;box(g,1.2,.4,1.3,0,.35,0,0xeadabd);cyl(g,.035,2.5,0,1.2,0,0x6f6858,.035,6);const sail=new T.Mesh(new T.ConeGeometry(.9,1.8,3),mat(0xf3e7cd));sail.position.set(.2,1.7,0);sail.scale.z=.08;g.add(sail);action(hull,'river');return {g,base};}
-  const boats=[boat(-7,0xc98261),boat(49,0x7296aa)];
+  function boat(base,color,offset){
+    const g=makeRiverBoat(color);
+    world.add(g);g.position.set(riverX(base)+offset,WATER_Y,base);
+    g.rotation.y=upstreamHeading(base);return {g,base};
+  }
+  const boats=[boat(-18,0xb56b51,2.45),boat(49,0x477e85,0)];
   const travelCar=car.clone();travelCar.scale.setScalar(1.25);travelCar.visible=false;world.add(travelCar);
   // Parked cars sit in reserved exhibit space, away from through roads.
   const displayCar=car.clone();displayCar.position.set(18.5,.5,-8);displayCar.rotation.y=-.4;world.add(displayCar);obstacles.push({x:18.5,z:-8,r:1.5});
@@ -166,7 +198,10 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   function activate(id){if(id==='lab')labActive=true;if(id==='ccp')crewActive=true;return id==='lab'?labActive:crewActive;}
   function tick(dt,reduced){
     elapsed+=dt;
-    for(const b of boats){if(sailing&&b===boats[1])continue;const z=b.base+(reduced?0:Math.sin(elapsed*.08)*4);b.g.position.set(riverX(z),.65+(reduced?0:Math.sin(elapsed*1.5)*.04),z);b.g.rotation.y=Math.atan2(riverX(z+.2)-riverX(z-.2),.4);}
+    for(const b of boats){
+      if(sailing&&b===boats[1])continue;
+      b.g.position.y=WATER_Y+(reduced?0:.018*Math.sin(elapsed*1.5+b.base));
+    }
     if(!reduced){experiment.rotation.y+=dt*(labActive?2:.15);dish.rotation.y+=dt*(labActive?.7:.03);cat.rotation.y=Math.sin(elapsed*.4)*.25;for(const p of people)p.g.rotation.y=Math.sin(elapsed*.2+p.i)*.3;}
     neon.emissiveIntensity=crewActive?2:.4;
     if(flight){
@@ -179,10 +214,16 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     }
     return flight;
   }
-  function blocked(x,z,margin=.4){return !terrainAllows(x,z,margin)||blockedByObjects(x,z,obstacles,margin);}
+  const landObstacles=obstacles.filter(o=>!underDeck.has(o));
+  const waterObstacles=obstacles.filter(o=>!deckRails.has(o));
+  waterObstacles.push({x:boats[0].g.position.x,z:boats[0].base,w:1.55,d:3.45});
+  function blocked(x,z,margin=.4){return !terrainAllows(x,z,margin)||blockedByObjects(x,z,landObstacles,margin);}
   function night(on){lightMaterials.forEach(m=>m.emissiveIntensity=on?2.7:.1);}
   let lastStreetX=Infinity,lastStreetZ=Infinity,street='';
   function roadName(x,z){if(Math.hypot(x-lastStreetX,z-lastStreetZ)>1){street=nearestRoad(x,z).road.name;lastStreetX=x;lastStreetZ=z;}return street;}
-  const heightAt=(x,z)=>onBridge(x,z)?deckY+.03:.5;
-  return {boat:boats[1].g,endFlight:park=>{flight=null;if(park)plane.position.set(park[0],-.02,park[1]);else plane.position.set(18,.46,-58);plane.rotation.set(0,Math.PI,0);},setSailing:on=>sailing=on,travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
+  function heightAt(x,z){
+    const b=bridges.find(b=>Math.abs(x-b.x)<=b.length/2&&Math.abs(z-b.z)<=b.width/2);
+    return b?bridgeDeckHeight(b,x)+.025:.5;
+  }
+  return {boat:boats[1].g,waterObstacles,endFlight:park=>{flight=null;if(park)plane.position.set(park[0],-.02,park[1]);else plane.position.set(18,.46,-58);plane.rotation.set(0,Math.PI,0);},setSailing:on=>{sailing=on;if(!on){const {g,base}=boats[1];g.position.set(riverX(base),WATER_Y,base);g.rotation.y=upstreamHeading(base);}},travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
 }

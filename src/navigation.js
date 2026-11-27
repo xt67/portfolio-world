@@ -3,6 +3,14 @@ export const LAND=[[-86,-20],[-79,-36],[-72,-47],[-72,-62],[-58,-74],[-42,-71],[
 export const riverX=z=>32+Math.sin(z*.055)*8+Math.sin(z*.11)*2;
 export const RIVER_HALF=3.8, BANK_HALF=5.8;
 export const bridges=[-26,27].map((z,i)=>({id:`bridge-${i}`,x:riverX(z),z,length:25,width:7.4}));
+export function bridgeDeckHeight(bridge,x){
+  const edge=bridge.length/2-Math.abs(x-bridge.x);
+  const t=Math.max(0,Math.min(1,edge/7));
+  return .5+3.05*t*t*(3-2*t);
+}
+export function bridgePiers(b){
+  return [-8,8].flatMap(dx=>[-2.7,2.7].map(dz=>({x:b.x+dx,z:b.z+dz,w:.75,d:.75})));
+}
 export const locations=[
  {id:'aurora',name:'AURORA',x:-15,z:-13,color:0x91d8cc},
  {id:'autocar',name:'AutoCar garage',x:14,z:-12,color:0xffb76b},

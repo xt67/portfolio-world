@@ -68,3 +68,5 @@ dialog.wardrobe-dialog {
 .tea-stop {margin-top:12px}.tea-stop span {font-size:12px}
 .airport-photo img {display:block;width:100%;max-height:170px;object-fit:cover;object-position:50% 45%;border-radius:8px}
 @media(max-width:650px){.postcard{max-height:44dvh}.postcard figure img{max-height:20vh}}
+.sailing .touchpad {display:grid;bottom:112px}
+.sailing .instructions,.sailing #nearby {display:none!important}
