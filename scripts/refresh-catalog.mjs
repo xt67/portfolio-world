@@ -12,7 +12,6 @@ const summaries = {
   'xt67/AURORA': 'Research prototype studying synthetic chest X-ray augmentation with limited TB-labelled data. Experimental findings, not clinical validation.',
   'xt67/AutoCar-Sim': 'CARLA driving simulation with behavioural cloning, steering prediction and a dashboard for model training and evaluation.',
   'xt67/CASS': 'A local AI assistant that translates natural-language questions into restricted, read-only PostgreSQL queries.',
-  'xt67/github-readme-stats': 'Archived fork of the GitHub profile statistics project. Upstream authorship and licensing remain with its contributors.',
   'xt67/Heartbeat-Classifier': 'An experimental ECG heartbeat classifier using a 1D CNN and the MIT-BIH dataset, with attention to class imbalance.',
   'xt67/Mars-Rover-Terrain-Segmentation': 'A terrain-segmentation pipeline for rover images, labelling soil, bedrock, sand and large rocks with DeepLabV3+.',
   'xt67/ML-Based-Vision': 'Turns relative monocular depth into coloured point clouds. Scale is relative, and individual frames are not fused into a map.',
@@ -56,7 +55,7 @@ async function listPublicRepositories(owner) {
     const items = await request(`https://api.github.com/users/${encodeURIComponent(owner)}/repos?per_page=100&type=owner&sort=full_name&page=${page}`);
     if (!Array.isArray(items)) throw new Error(`Unexpected repository response for ${owner}; catalog unchanged.`);
     for (const repo of items) {
-      if (repo.private !== false || repo.owner?.login?.toLowerCase() !== owner.toLowerCase()) continue;
+      if (repo.private !== false || repo.fork || repo.owner?.login?.toLowerCase() !== owner.toLowerCase()) continue;
       const fullName = `${owner}/${repo.name}`;
       results.push({
         id: String(repo.id), fullName, name: repo.name, owner,
@@ -64,7 +63,7 @@ async function listPublicRepositories(owner) {
         description: summaries[fullName] || repo.description || 'Public repository. Open its README for project details.',
         language: repo.language || null, fork: Boolean(repo.fork), archived: Boolean(repo.archived),
         homepage: safeHomepage(repo.homepage),
-        kind: fullName === 'xt67/xt67' ? 'profile' : repo.fork ? 'fork' : 'project'
+        kind: fullName === 'xt67/xt67' ? 'profile' : 'project'
       });
     }
     if (items.length < 100) return results;

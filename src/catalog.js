@@ -1,31 +1,261 @@
-// Public GitHub snapshot. Refresh with: node scripts/refresh-catalog.mjs
-// Editorial summaries describe projects, not independently reproduced results.
-export const catalogDate = '2026-11-25';
-const snapshot = [
-  ['1463081989','xt67','3D-Building-Reconstruction','Reconstructs camera poses, point clouds and observed surfaces from overlapping building images. Synthetic pipeline checks; unseen surfaces remain missing.','Python'],
-  ['1199263986','xt67','AURORA','Research prototype studying synthetic chest X-ray augmentation with limited TB-labelled data. Experimental findings, not clinical validation.','Python'],
-  ['1426544923','xt67','AutoCar-Sim','CARLA driving simulation with behavioural cloning, steering prediction and a dashboard for model training and evaluation.','Python'],
-  ['1139179947','xt67','CASS','A local AI assistant that translates natural-language questions into restricted, read-only PostgreSQL queries.','Python'],
-  ['1357246457','xt67','github-readme-stats','Archived fork of the GitHub profile statistics project. Upstream authorship and licensing remain with its contributors.',null,'https://github-readme-stats.vercel.app',true,true],
-  ['1462712434','xt67','Heartbeat-Classifier','An experimental ECG heartbeat classifier using a 1D CNN and the MIT-BIH dataset, with attention to class imbalance.','Python','https://heartbeat-classifier-web.vercel.app'],
-  ['1463080309','xt67','Mars-Rover-Terrain-Segmentation','A terrain-segmentation pipeline for rover images, labelling soil, bedrock, sand and large rocks with DeepLabV3+.','Python'],
-  ['1463081275','xt67','ML-Based-Vision','Turns relative monocular depth into coloured point clouds. Scale is relative, and individual frames are not fused into a map.','Python'],
-  ['1198588870','xt67','ML-Paper-Reproducibility-Predictor','Examines research methods text for reporting gaps and offers reproducibility indicators and suggested improvements.','Python'],
-  ['1462712795','xt67','NeuroSnake','A Snake-playing reinforcement-learning project using Double DQN, PyTorch and a NumPy network with manual backpropagation.','Python','https://neurosnake-web.vercel.app'],
-  ['1199276513','xt67','Pune-AQI-Monitor','Pune environmental-data monitoring and visualisation. Live regional model estimates are distinguished from station measurements.','Python'],
-  ['1011826287','xt67','Qatar-Water-Intelligence','Explores Qatar water-reservoir capacity data using Python, SQL, PostgreSQL and interactive visualisations.','Python','https://qatar-water-intelligence-web.vercel.app'],
-  ['1354851387','xt67','Robotic-Arm','A hand-tracking robotic-arm project combining computer vision, MediaPipe and Arduino servo control. See the repository for implementation and attribution.','Python'],
-  ['1208460365','xt67','SlimZero','Local prompt compression and LLM workflow tooling, with response controls and circuit breakers for agent execution.','Python'],
-  ['1357213690','xt67','xt67','The GitHub profile README repository for Rayan Rahman / xt67.',null],
-  ['1113214368','xt67-Lab','buymeachai','An open-source UPI support-page project for Indian creators. Listed here as a software project; this portfolio does not collect donations.','HTML','https://xt67-lab.github.io/buymeachai/'],
-  ['1110100149','xt67-Lab','shlama-linux','An Ollama-powered terminal assistant that translates natural language into Linux command suggestions.','Shell'],
-  ['1111788731','xt67-Lab','shlama-windows','An Ollama-powered terminal assistant that translates natural language into PowerShell command suggestions.','PowerShell']
+// Public repository snapshot. Refresh with: node scripts/refresh-catalog.mjs
+// Descriptions are editorial summaries, not independently reproduced results.
+export const catalogDate = "2026-11-27";
+export const repositories = [
+  {
+    "id": "1113214368",
+    "fullName": "xt67-Lab/buymeachai",
+    "name": "buymeachai",
+    "owner": "xt67-Lab",
+    "url": "https://github.com/xt67-Lab/buymeachai",
+    "description": "An open-source UPI support-page project for Indian creators. Listed here as a software project; this portfolio does not collect donations.",
+    "language": "HTML",
+    "fork": false,
+    "archived": false,
+    "homepage": "https://xt67-lab.github.io/buymeachai/",
+    "kind": "project"
+  },
+  {
+    "id": "1110100149",
+    "fullName": "xt67-Lab/shlama-linux",
+    "name": "shlama-linux",
+    "owner": "xt67-Lab",
+    "url": "https://github.com/xt67-Lab/shlama-linux",
+    "description": "An Ollama-powered terminal assistant that translates natural language into Linux command suggestions.",
+    "language": "Shell",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1111788731",
+    "fullName": "xt67-Lab/shlama-windows",
+    "name": "shlama-windows",
+    "owner": "xt67-Lab",
+    "url": "https://github.com/xt67-Lab/shlama-windows",
+    "description": "An Ollama-powered terminal assistant that translates natural language into PowerShell command suggestions.",
+    "language": "PowerShell",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1463081989",
+    "fullName": "xt67/3D-Building-Reconstruction",
+    "name": "3D-Building-Reconstruction",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/3D-Building-Reconstruction",
+    "description": "Reconstructs camera poses, point clouds and observed surfaces from overlapping building images. Synthetic pipeline checks; unseen surfaces remain missing.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1199263986",
+    "fullName": "xt67/AURORA",
+    "name": "AURORA",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/AURORA",
+    "description": "Research prototype studying synthetic chest X-ray augmentation with limited TB-labelled data. Experimental findings, not clinical validation.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1426544923",
+    "fullName": "xt67/AutoCar-Sim",
+    "name": "AutoCar-Sim",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/AutoCar-Sim",
+    "description": "CARLA driving simulation with behavioural cloning, steering prediction and a dashboard for model training and evaluation.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1139179947",
+    "fullName": "xt67/CASS",
+    "name": "CASS",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/CASS",
+    "description": "A local AI assistant that translates natural-language questions into restricted, read-only PostgreSQL queries.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1462712434",
+    "fullName": "xt67/Heartbeat-Classifier",
+    "name": "Heartbeat-Classifier",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/Heartbeat-Classifier",
+    "description": "An experimental ECG heartbeat classifier using a 1D CNN and the MIT-BIH dataset, with attention to class imbalance.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": "https://heartbeat-classifier-web.vercel.app/",
+    "kind": "project"
+  },
+  {
+    "id": "1463080309",
+    "fullName": "xt67/Mars-Rover-Terrain-Segmentation",
+    "name": "Mars-Rover-Terrain-Segmentation",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/Mars-Rover-Terrain-Segmentation",
+    "description": "A terrain-segmentation pipeline for rover images, labelling soil, bedrock, sand and large rocks with DeepLabV3+.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1463081275",
+    "fullName": "xt67/ML-Based-Vision",
+    "name": "ML-Based-Vision",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/ML-Based-Vision",
+    "description": "Turns relative monocular depth into coloured point clouds. Scale is relative, and individual frames are not fused into a map.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1198588870",
+    "fullName": "xt67/ML-Paper-Reproducibility-Predictor",
+    "name": "ML-Paper-Reproducibility-Predictor",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/ML-Paper-Reproducibility-Predictor",
+    "description": "Examines research methods text for reporting gaps and offers reproducibility indicators and suggested improvements.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1462712795",
+    "fullName": "xt67/NeuroSnake",
+    "name": "NeuroSnake",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/NeuroSnake",
+    "description": "A Snake-playing reinforcement-learning project using Double DQN, PyTorch and a NumPy network with manual backpropagation.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": "https://neurosnake-web.vercel.app/",
+    "kind": "project"
+  },
+  {
+    "id": "1470074250",
+    "fullName": "xt67/portfolio-world",
+    "name": "portfolio-world",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/portfolio-world",
+    "description": "Rayan Rahman / xt67 — interactive 3D project portfolio",
+    "language": "JavaScript",
+    "fork": false,
+    "archived": false,
+    "homepage": "https://portfolio-world-three.vercel.app/",
+    "kind": "project"
+  },
+  {
+    "id": "1199276513",
+    "fullName": "xt67/Pune-AQI-Monitor",
+    "name": "Pune-AQI-Monitor",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/Pune-AQI-Monitor",
+    "description": "Pune environmental-data monitoring and visualisation. Live regional model estimates are distinguished from station measurements.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1011826287",
+    "fullName": "xt67/Qatar-Water-Intelligence",
+    "name": "Qatar-Water-Intelligence",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/Qatar-Water-Intelligence",
+    "description": "Explores Qatar water-reservoir capacity data using Python, SQL, PostgreSQL and interactive visualisations.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": "https://qatar-water-intelligence-web.vercel.app/",
+    "kind": "project"
+  },
+  {
+    "id": "1354851387",
+    "fullName": "xt67/Robotic-Arm",
+    "name": "Robotic-Arm",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/Robotic-Arm",
+    "description": "A hand-tracking robotic-arm project combining computer vision, MediaPipe and Arduino servo control. See the repository for implementation and attribution.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1208460365",
+    "fullName": "xt67/SlimZero",
+    "name": "SlimZero",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/SlimZero",
+    "description": "Local prompt compression and LLM workflow tooling, with response controls and circuit breakers for agent execution.",
+    "language": "Python",
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "project"
+  },
+  {
+    "id": "1357213690",
+    "fullName": "xt67/xt67",
+    "name": "xt67",
+    "owner": "xt67",
+    "url": "https://github.com/xt67/xt67",
+    "description": "The GitHub profile README repository for Rayan Rahman / xt67.",
+    "language": null,
+    "fork": false,
+    "archived": false,
+    "homepage": null,
+    "kind": "profile"
+  }
 ];
-export const repositories = snapshot.map(([id,owner,name,description,language,homepage=null,fork=false,archived=false]) => ({
-  id, fullName: `${owner}/${name}`, name, owner, url: `https://github.com/${owner}/${name}`,
-  description, language, fork, archived, homepage, kind: name === 'xt67' && owner === 'xt67' ? 'profile' : fork ? 'fork' : 'project'
-}));
 export const organizations = [
-  {id:'lab',owner:'xt67-Lab',name:'xt67-Lab',url:'https://github.com/xt67-Lab',theme:'research',description:'A scientific research lab district in this portfolio, representing the xt67-Lab GitHub organization.',repositoryCount:3,status:'public-projects'},
-  {id:'ccp',owner:'Cat-Communist-Party-CCP',name:'Cat Communist Party · CCP',url:'https://github.com/Cat-Communist-Party-CCP',theme:'crew',description:'A fictional, mafia-film-inspired cat-crew hideout representing this GitHub organization. The game theme is not a claim about real-world activity.',repositoryCount:0,status:'no-public-repositories'}
+  {
+    "id": "lab",
+    "owner": "xt67-Lab",
+    "name": "xt67-Lab",
+    "url": "https://github.com/xt67-Lab",
+    "theme": "research",
+    "description": "A scientific research lab district in this portfolio, representing the xt67-Lab GitHub organization.",
+    "repositoryCount": 3,
+    "status": "public-projects"
+  },
+  {
+    "id": "ccp",
+    "owner": "Cat-Communist-Party-CCP",
+    "name": "Cat Communist Party · CCP",
+    "url": "https://github.com/Cat-Communist-Party-CCP",
+    "theme": "crew",
+    "description": "A fictional, mafia-film-inspired cat-crew hideout representing this GitHub organization. The game theme is not a claim about real-world activity.",
+    "repositoryCount": 0,
+    "status": "no-public-repositories"
+  }
 ];

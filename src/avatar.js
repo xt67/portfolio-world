@@ -1,6 +1,8 @@
 import * as T from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
+export const CHAI_SECONDS=3.4;
+
 const tau = 2 * Math.PI;
 const vec = (point) => new T.Vector3(...point);
 const blend = (a, b, strength) => new T.Color(a).lerp(new T.Color(b), strength);
@@ -296,6 +298,15 @@ export function createAvatar(options = {}) {
     oval(elbow,ember?skin:dark,-s*.029,-.239,.019,.016,.033,.018,s*-.2);
     arms.push({arm,elbow,s});
   }
+  // The kulhad follows the palm. Its open rim and tea surface stay visible as it tips.
+  const drinkingArm=arms.find(({s})=>s===1);
+  const cup=new T.Group();
+  cup.name='chai-cup';
+  cup.position.set(-.038,-.252,.020);
+  add(cup,new T.CylinderGeometry(.052,.032,.092,20,1,true),'#b76039');
+  add(cup,new T.CylinderGeometry(.048,.048,.003,20),'#ac7148',[0,.040,0]);
+  add(cup,new T.TorusGeometry(.051,.005,6,24).rotateX(Math.PI/2),'#e5a373',[0,.046,0]);
+  const tilt=new T.Quaternion(),tiltAxis=new T.Vector3(1,0,0);
   const assets = [];
   for (const [parent,parts] of batches) {
     const geometry = mergeGeometries(parts);
@@ -306,7 +317,7 @@ export function createAvatar(options = {}) {
     parent.add(surface);
     assets.push(geometry);
   }
-  root.userData.animate = (time = 0, movementAmount = 0, seated = false) => {
+  root.userData.animate = (time = 0, movementAmount = 0, seated = false, sip = null) => {
     const stride = Math.sin(time*9);
     const motion = seated ? 0 : T.MathUtils.clamp(movementAmount,0,1);
     body.position.y = seated ? -.34 : Math.cos(time*18)*.014*motion;
@@ -321,6 +332,20 @@ export function createAvatar(options = {}) {
       arm.rotation.x = seated ? -.39 : -s*stride*motion*.49 - .035;
       elbow.rotation.x = seated ? -.74 : -.13 - Math.max(0,s*stride)*motion*.28;
     }
+    const {arm,elbow}=drinkingArm;
+    arm.rotation.order='YXZ';
+    arm.rotation.y=0;head.rotation.x=0;
+    if(sip!==null){
+      const lift=T.MathUtils.smoothstep(sip,0,.35)*(1-T.MathUtils.smoothstep(sip,.70,1));
+      const tip=T.MathUtils.smoothstep(sip,.32,.51)*(1-T.MathUtils.smoothstep(sip,.63,.77));
+      arm.rotation.x=-.34-1.06*lift;
+      arm.rotation.y=-(ember?.76:.86)*lift;
+      elbow.rotation.x=-.87-(ember?.83:.73)*lift;
+      head.rotation.x=.055*lift-.11*tip;
+      if(!cup.parent)elbow.add(cup);
+      cup.quaternion.multiplyQuaternions(arm.quaternion,elbow.quaternion).invert()
+        .multiply(tilt.setFromAxisAngle(tiltAxis,-.60*tip));
+    }else if(cup.parent)cup.removeFromParent();
     tails.forEach((tail,i)=>{ tail.rotation.x = .018 + motion*.12 + Math.sin(time*(motion?9:1.7)+i)*(.013+.046*motion); });
     braids.forEach(pony=>{ pony.rotation.z = .06*Math.sin(time*(motion?4.5:1.5)); });
   };

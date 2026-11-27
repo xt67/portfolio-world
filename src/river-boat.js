@@ -32,5 +32,18 @@ export function makeRiverBoat(paint) {
   for(const x of [-.58,.58]){
     const pin=mesh(new T.CylinderGeometry(.038,.052,.16,10),0xaf9668);pin.position.set(x,.34,.58);
   }
+  // A low outboard and coiled bow line keep the little ferry below the bridges.
+  const shaft=mesh(new T.CylinderGeometry(.05,.065,.48,10),0x485257);
+  shaft.position.set(0,.21,-1.70);
+  const engine=mesh(new T.SphereGeometry(1,18,12),0x30404b);
+  engine.scale.set(.21,.17,.26);engine.position.set(0,.48,-1.66);
+  const tiller=mesh(new T.CylinderGeometry(.026,.034,.45,10),0x654b37);
+  tiller.rotation.x=Math.PI*.43;tiller.position.set(.07,.48,-1.31);
+  const ring=mesh(new T.TorusGeometry(.20,.049,8,32),0xe77b43);
+  ring.rotation.x=Math.PI/2;ring.position.set(-.19,.35,.72);
+  for(let i=0;i<3;i++){
+    const rope=mesh(new T.TorusGeometry(.105+i*.021,.012,6,24),0xd6b889);
+    rope.rotation.x=Math.PI/2;rope.position.set(.04,.067,1.19);
+  }
   return boat;
 }

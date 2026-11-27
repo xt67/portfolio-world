@@ -6,7 +6,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {plantPaintedTrees,paintHouse,paintTownGround} from './art-direction.js';
 import {LAND,riverX,RIVER_HALF,BANK_HALF,bridges,bridgeDeckHeight,bridgePiers,roads,paths,locations,insideLand,terrainAllows,blockedByObjects,makeScenery,nearestRoad,canPlace} from './navigation.js';
 
-export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,mat,interactables}) {
+export function buildTown({T,world,box,cyl,sphere,text,tree,obstacles,car,mat,interactables}) {
   const roadY=.43;
   function group(x,z,y=.3){const g=new T.Group();g.position.set(x,y,z);world.add(g);return g;}
   function action(object,id){object.userData.action=id;interactables.push(object);return object;}
@@ -71,7 +71,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     }
   }
 
-  const scenery=makeScenery(),lightMaterials=[];
+  const scenery=makeScenery();
 
   for(const h of scenery.houses){
     const g=group(h.x,h.z);g.rotation.y=h.rotation;
@@ -99,7 +99,32 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   }
   plantPaintedTrees(world,scenery.trees,action);
   for(const t of scenery.trees)obstacles.push({x:t.x,z:t.z,r:.65*t.scale});
-  for(const l of scenery.lamps){pole(l.x,l.z);const globe=new T.Mesh(new T.SphereGeometry(.2,8,6),new T.MeshStandardMaterial({color:0xffdfa1,emissive:0xffbd61,emissiveIntensity:.1}));globe.position.set(l.x,2.8,l.z);world.add(globe);action(globe,'look:Streetlight');lightMaterials.push(globe.material);obstacles.push({x:l.x,z:l.z,r:.25});}
+  const glass=new T.MeshStandardMaterial({color:0xf6d08b,emissive:0xffbe67,emissiveIntensity:0});
+  const lens=new T.BoxGeometry(.45,.55,.45);
+  const glow=new T.Group();
+  world.add(glow);
+  glow.visible=false;
+  const gradient=document.createElement('canvas');
+  gradient.width=gradient.height=64;
+  const ctx=gradient.getContext('2d'),falloff=ctx.createRadialGradient(32,32,0,32,32,32);
+  for(const [radius,alpha] of [[0,1],[.18,.75],[.46,.25],[.75,.06],[1,0]])
+    falloff.addColorStop(radius,`rgba(255,255,255,${alpha})`);
+  ctx.fillStyle=falloff;ctx.fillRect(0,0,64,64);
+  const glowMap=new T.CanvasTexture(gradient);
+  const soft={map:glowMap,color:0xffc27a,transparent:true,depthWrite:false,blending:T.AdditiveBlending};
+  const haloMaterial=new T.SpriteMaterial({...soft,opacity:.68});
+  const pools=new T.InstancedMesh(new T.PlaneGeometry(6.8,6.8),new T.MeshBasicMaterial({...soft,opacity:.32}),scenery.lamps.length);
+  glow.add(pools);
+  scenery.lamps.forEach(({x,z},i)=>{
+    action(cyl(world,.07,2.4,x,1.5,z,0x50685c,.07,8),'look:Streetlight');
+    const pane=new T.Mesh(lens,glass);
+    pane.position.set(x,2.8,z);world.add(pane);action(pane,'look:Streetlight');
+    action(box(world,.65,.12,.65,x,3.12,z,0x425b4e),'look:Streetlight');
+    const halo=new T.Sprite(haloMaterial);
+    halo.position.copy(pane.position);halo.scale.set(2.45,2.45,1);glow.add(halo);
+    pools.setMatrixAt(i,new T.Matrix4().makeRotationX(-Math.PI/2).setPosition(x,roadY+.035,z));
+    obstacles.push({x,z,r:.25});
+  });
 
   function bench(x,z,rot=0){const g=group(x,z);g.rotation.y=rot;box(g,3,.22,.9,0,.7,0,0xa77b53);box(g,3,.75,.12,0,1.15,.4,0xa77b53);for(const a of [-1,1])box(g,.14,.65,.65,a,.33,0,0x44564a);g.children.forEach(m=>{m.userData.seat={x,z};action(m,'bench');});obstacles.push({x,z,r:1.5});return g;}
   // Named destinations have one source of coordinates and deliberately open frontages.
@@ -148,7 +173,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   function boat(base,color,offset){
     const g=makeRiverBoat(color);
     world.add(g);g.position.set(riverX(base)+offset,WATER_Y,base);
-    g.rotation.y=upstreamHeading(base);return {g,base};
+    g.rotation.y=upstreamHeading(base);return {g,base,offset};
   }
   const boats=[boat(-18,0xb56b51,2.45),boat(49,0x477e85,0)];
   const travelCar=car.clone();travelCar.scale.setScalar(1.25);travelCar.visible=false;world.add(travelCar);
@@ -174,7 +199,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   // Direction signs make the winding road network legible without tidying its shape.
   for(const [x,z,label]of [[-30,-25,'LAB / AIRPORT'],[49,-24,'CCP QUARTER'],[-24,36,'ARCADE / OLD TOWN'],[18,34,'RIVERSIDE']]){if(!canPlace(x,z,.5,obstacles))continue;cyl(world,.08,2.4,x,1.5,z,0x5c6856,.08,7);box(world,4,.8,.15,x,2.7,z,0x315b54);text(world,label,x,2.7,z+.1,3.7,'#e6dfbd');}
   for(const vehicle of [travelCar,displayCar])vehicle.traverse(m=>{if(m.isMesh)action(m,'vehicle');});
-  for(const b of boats)b.g.traverse(m=>{if(m.isMesh&&!m.userData.action)action(m,'river');});
+  boats.forEach(({g},i)=>g.traverse(m=>{if(m.isMesh)action(m,'board:'+i);}));
   plane.traverse(m=>{if(m.isMesh&&!m.userData.action)action(m,'airport');});
   world.updateMatrixWorld(true);
   const registered=new Set(interactables);
@@ -186,7 +211,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     const crossing=bridges.some(b=>Math.abs(pos.x-b.x)<=b.length/2&&Math.abs(pos.z-b.z)<=b.width/2);
     action(o,crossing?'look:Bridge':Math.hypot(pos.x-closest.x,pos.z-closest.z)<8?closest.id:'look:Streetlight');
   });
-  let sailing=false;
+  let activeBoat=null;
   let flight=null,elapsed=0,labActive=false,crewActive=false;
   function fly(from,to,duration){
     const [x,z]=from,[ex,ez]=to,groundA=x===18?.46:-.02,groundB=ex===18?.46:-.02;
@@ -199,7 +224,7 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
   function tick(dt,reduced){
     elapsed+=dt;
     for(const b of boats){
-      if(sailing&&b===boats[1])continue;
+      if(b===activeBoat)continue;
       b.g.position.y=WATER_Y+(reduced?0:.018*Math.sin(elapsed*1.5+b.base));
     }
     if(!reduced){experiment.rotation.y+=dt*(labActive?2:.15);dish.rotation.y+=dt*(labActive?.7:.03);cat.rotation.y=Math.sin(elapsed*.4)*.25;for(const p of people)p.g.rotation.y=Math.sin(elapsed*.2+p.i)*.3;}
@@ -215,15 +240,28 @@ export function buildTown({T,world,box,cyl,sphere,text,tree,pole,obstacles,car,m
     return flight;
   }
   const landObstacles=obstacles.filter(o=>!underDeck.has(o));
-  const waterObstacles=obstacles.filter(o=>!deckRails.has(o));
-  waterObstacles.push({x:boats[0].g.position.x,z:boats[0].base,w:1.55,d:3.45});
+  const riverObstacles=obstacles.filter(o=>!deckRails.has(o));
+  function boardBoat(index=1){
+    activeBoat=boats[index];
+    const {g}=activeBoat;
+    return {x:g.position.x,z:g.position.z,heading:g.rotation.y};
+  }
+  function dockBoat(){
+    if(!activeBoat)return;
+    const {g,base,offset}=activeBoat;
+    g.position.set(riverX(base)+offset,WATER_Y,base);
+    g.rotation.y=upstreamHeading(base);activeBoat=null;
+  }
+  const obstaclesForBoat=boats.map(boat=>[
+    ...riverObstacles,...boats.filter(other=>other!==boat).map(({g})=>({x:g.position.x,z:g.position.z,w:1.55,d:3.45}))
+  ]);
   function blocked(x,z,margin=.4){return !terrainAllows(x,z,margin)||blockedByObjects(x,z,landObstacles,margin);}
-  function night(on){lightMaterials.forEach(m=>m.emissiveIntensity=on?2.7:.1);}
+  function night(on){glass.emissiveIntensity=on?3:0;glow.visible=on;}
   let lastStreetX=Infinity,lastStreetZ=Infinity,street='';
   function roadName(x,z){if(Math.hypot(x-lastStreetX,z-lastStreetZ)>1){street=nearestRoad(x,z).road.name;lastStreetX=x;lastStreetZ=z;}return street;}
   function heightAt(x,z){
     const b=bridges.find(b=>Math.abs(x-b.x)<=b.length/2&&Math.abs(z-b.z)<=b.width/2);
     return b?bridgeDeckHeight(b,x)+.025:.5;
   }
-  return {boat:boats[1].g,waterObstacles,endFlight:park=>{flight=null;if(park)plane.position.set(park[0],-.02,park[1]);else plane.position.set(18,.46,-58);plane.rotation.set(0,Math.PI,0);},setSailing:on=>{sailing=on;if(!on){const {g,base}=boats[1];g.position.set(riverX(base),WATER_Y,base);g.rotation.y=upstreamHeading(base);}},travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
+  return {boardBoat,dockBoat,get boat(){return activeBoat?.g;},get waterObstacles(){return obstaclesForBoat[boats.indexOf(activeBoat)];},endFlight:park=>{flight=null;if(park)plane.position.set(park[0],-.02,park[1]);else plane.position.set(18,.46,-58);plane.rotation.set(0,Math.PI,0);},travelCar,blocked,tick,fly,activate,night,river,plane,heightAt,scenery,roadName};
 }

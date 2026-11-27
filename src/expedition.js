@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {CHAI_SECONDS} from './avatar.js';
 import {journeys} from './journeys.js';
 import {addDestinationScenery} from './destination-scenery.js';
 
@@ -18,11 +19,9 @@ export function exploreDestination(W,name,returnHome,setView){
   ui.innerHTML=`<article class="island-card postcard"><h1>${name}</h1><h2>${spec.chapter}</h2><p>${spec.story}</p><details><summary>Photo journal · ${spec.views.length} views</summary><figure><img><figcaption></figcaption></figure><div class="photo-controls"><button class="secondary previous" aria-label="Previous photo">←</button><span class="page-count"></span><button class="secondary next" aria-label="Next photo">→</button><button class="secondary viewpoint">Visit this view</button></div></details><div class="tea-stop"><button class="secondary tea-button">Visit the ${tea} stall</button><span role="status"></span></div></article><button class="glass island-back">Fly home ↗</button><div class="island-guide">Walk with the arrows or tap the ground · Drag to look around</div>`;
   document.body.append(ui);
   const find=selector=>ui.querySelector(selector),status=find('[role=status]'),teaButton=find('.tea-button');
-  const cup=new T.Mesh(new T.CylinderGeometry(.052,.033,.095,16),new T.MeshStandardMaterial({color:0xd5ae72}));
-  cup.position.set(.235,1.08,.13);cup.visible=false;avatar.add(cup);
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let vista=null,target=null,elapsed=0,cupTime=0,nearTea=false,photo=0;
-  function place([x,z],yaw,view=null){vista=view?.aim||null;avatar.position.set(x,height(x,z)+.025,z);avatar.rotation.y=yaw+Math.PI;target=null;setView(yaw,view?.pitch,view?.zoom);}
+  function place([x,z],yaw,view=null){cupTime=0;vista=view?.aim||null;avatar.position.set(x,height(x,z)+.025,z);avatar.rotation.y=yaw+Math.PI;target=null;setView(yaw,view?.pitch,view?.zoom);}
   place(spec.views[0].spot,spec.views[0].yaw,spec.views[0]);
   function displayPhoto(){
     const view=spec.views[photo],img=find('img');
@@ -33,7 +32,7 @@ export function exploreDestination(W,name,returnHome,setView){
   find('.previous').onclick=()=>turn(-1);find('.next').onclick=()=>turn(1);
   find('.viewpoint').onclick=()=>{const view=spec.views[photo];place(view.spot,view.yaw,view);find('details').open=false;status.textContent='';};
   displayPhoto();find('details').open=innerWidth>=850;
-  function sip(){cup.visible=true;cupTime=3;status.textContent='Sipping '+tea+' at the stall.';}
+  function sip(){if(cupTime>0)return;target=null;vista=null;avatar.rotation.y=.3;cupTime=CHAI_SECONDS;status.textContent='Sipping '+tea+' at the stall.';}
   teaButton.onclick=()=>{if(nearTea){sip();return;}place(spec.tea.spot,0);nearTea=true;teaButton.textContent='Drink '+tea;status.textContent='';};
   find('.island-back').onclick=returnHome;
   function tick(dt,keys,yaw,pitch,distance){
@@ -53,11 +52,15 @@ export function exploreDestination(W,name,returnHome,setView){
     }
     const near=Math.hypot(pos.x-spec.tea.counter[0],pos.z-spec.tea.counter[1])<3.3;
     if(near!==nearTea){nearTea=near;teaButton.textContent=near?'Drink '+tea:'Visit the '+tea+' stall';status.textContent='';}
-    if(cupTime>0){cupTime-=dt;cup.position.y=1.09+(reduced?0:.27*Math.sin((3-cupTime)*Math.PI/3));if(cupTime<=0)cup.visible=false;}
-    W.animateAvatar(reduced?0:elapsed,moving&&!reduced?1:0,false);
+    if(cupTime>0){
+      cupTime=moving?0:Math.max(0,cupTime-dt);
+      if(!cupTime)status.textContent='';
+    }
+    W.animateAvatar(reduced?0:elapsed,moving&&!reduced?1:0,false,cupTime?1-cupTime/CHAI_SECONDS:null);
     const focus=vista?new T.Vector3(group.position.x+vista[0],vista[1],group.position.z+vista[2]):new T.Vector3(group.position.x+pos.x,pos.y+1.36,group.position.z+pos.z);
     const d=Math.max(4,Math.min(distance,360));
     W.camera.position.copy(focus).addScaledVector(new T.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)),d);
+    if(cupTime)W.camera.position.copy(focus).add(new T.Vector3(1.32,.48,2.13));
     W.camera.lookAt(focus);W.renderer.render(W.scene,W.camera);
   }
   function point(event){
@@ -68,6 +71,6 @@ export function exploreDestination(W,name,returnHome,setView){
     const p=group.worldToLocal(hit.point);
     if(walkable(p.x,p.z))target=p;
   }
-  function dispose(){ui.remove();avatar.remove(cup);cup.geometry.dispose();cup.material.dispose();W.world.add(avatar);W.marker.visible=true;}
+  function dispose(){ui.remove();W.animateAvatar(0,0,false);W.world.add(avatar);W.marker.visible=true;}
   return {tick,point,perform(){if(nearTea)sip();},dispose};
 }

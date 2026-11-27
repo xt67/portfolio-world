@@ -21,7 +21,6 @@ export function createWorld(canvas,look){
  const plaza=new T.Mesh(new T.CircleGeometry(5.78,64),plazaTiles());plaza.rotation.x=-Math.PI/2;plaza.position.y=.492;world.add(plaza);
  text(world,'RAYAN RAHMAN',0,.52,1,11).rotation.x=-Math.PI/2;text(world,'XT67 · A WORLD OF EXPERIMENTS',0,.53,3,7,'#54756b').rotation.x=-Math.PI/2;
  function tree(x,z,scale=1,tint=0x5b8b70){const g=new T.Group();g.position.set(x,.3,z);g.scale.setScalar(scale);world.add(g);cyl(g,.16,1.8,0,.9,0,0x80634b,.22,7);sphere(g,1.3,0,2.4,0,tint);sphere(g,.85,.7,2,.3,tint);sphere(g,.8,-.6,2.2,-.3,tint);obstacles.push({x,z,r:.65*scale});}
- function pole(x,z){cyl(world,.07,2.4,x,1.5,z,0x50685c,.07,8);box(world,.45,.55,.45,x,2.8,z,0xf6d08b);box(world,.65,.12,.65,x,3.12,z,0x425b4e);}
  function pavilion(l){const g=new T.Group();g.position.set(l.x,.5,l.z);world.add(g);box(g,9,.2,6,0,.15,0,0xf1e5c9);box(g,9,3.5,.3,0,2,-2.85,0xe2ddc9);for(const x of [-4.3,4.3])box(g,.28,4,.28,x,2,2.5,0xc5c6ad);box(g,9.6,.22,1.2,0,4.1,-2.8,l.color);box(g,9.6,.22,1.2,0,4.1,2.7,l.color);for(const x of [-4.5,4.5])box(g,.3,.25,6,x,4.1,0,l.color);text(g,l.name.toUpperCase(),0,3.1,-2.65,7);dressPavilion(g,l.color,box);for(const dx of [-4.3,-1.46,1.46,4.3])obstacles.push({x:l.x+dx,z:l.z+2.63,r:.14});obstacles.push({x:l.x,z:l.z-2.85,w:9,d:.3});return g;}
  function monitor(g,x,z,w=2.3){box(g,w,1.4,.15,x,2.05,z,0x23453f);const screen=box(g,w-.14,1.23,.02,x,2.05,z+.09,0x90d8b4);box(g,.13,.55,.13,x,1.1,z,0x38584d);box(g,.8,.1,.5,x,.83,z,0x38584d);for(let i=0;i<4;i++)box(g,w*.64,.04,.025,x-.1,2.45-i*.24,z+.11,0x2d7771);return screen;}
  const research=pavilion(locations[0]);box(research,5,.15,2.5,0,1.05,0,0x749f96);for(const x of [-2,2])box(research,.2,1,.2,x,.55,0,0x52756b);monitor(research,0,-.5,3);const orb=sphere(research,.75,0,3.1,.4,0x93e1d2);const orbit=new T.Mesh(new T.TorusGeometry(1.1,.035,8,48),mat(0x468e86));orbit.position.copy(orb.position);orbit.rotation.x=.8;research.add(orbit);animated.push(orbit);text(research,'REAL → SYNTHETIC → EVALUATE',0,.65,1.32,4.5);
@@ -40,13 +39,13 @@ export function createWorld(canvas,look){
    avatar.add(next);
  }
  setAvatar(look);
- function animateAvatar(time,moving,seated){traveller.userData.animate(time,moving,seated);}
+ function animateAvatar(time,moving,seated,sip){traveller.userData.animate(time,moving,seated,sip);}
  const marker=new T.Mesh(new T.RingGeometry(.6,.72,40),new T.MeshBasicMaterial({color:0xffdb8f,side:T.DoubleSide}));marker.rotation.x=-Math.PI/2;marker.position.y=.5;world.add(marker);const destination=new T.Mesh(new T.RingGeometry(.25,.4,32),new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide}));destination.rotation.x=-Math.PI/2;destination.position.y=.51;destination.visible=false;world.add(destination);
  const track=new T.Group();track.visible=false;scene.add(track);cyl(track,27,2,0,-1.3,0,0x987c5a,26,64);cyl(track,26,.1,0,-.22,0,0x84a78b,26,64);const road=mesh(track,new T.RingGeometry(8.9,13.1,160),0x455957,0,.02,0);road.rotation.x=-Math.PI/2;road.scale.x=1.45;for(let i=0;i<90;i++){const a=i/90*Math.PI*2;const stripe=box(track,.1,.04,.4,Math.cos(a)*15.95,.08,Math.sin(a)*11,0xeee0be);stripe.rotation.y=-a;}for(let i=0;i<100;i++){const a=i/100*Math.PI*2;for(const r of [8.8,13.2]){const curb=box(track,.4,.1,.55,Math.cos(a)*r*1.45,.07,Math.sin(a)*r,i%2?0xe9d4ab:0xd78f72);curb.rotation.y=-a;}}
  text(track,'AUTOCAR',0,.08,0,12,'#e9dfb9').rotation.x=-Math.PI/2;text(track,'THE HUMAN IN THE LOOP',0,.09,2,7,'#e9dfb9').rotation.x=-Math.PI/2;
  const car=new T.Group();track.add(car);box(car,1.1,.45,2.1,0,.45,0,0xf3b562);box(car,.85,.4,.9,0,.85,-.15,0x2c5550);for(const x of [-.6,.6])for(const z of [-.65,.65])box(car,.2,.45,.4,x,.3,z,0x253d37);box(car,.8,.13,.04,0,.5,1.07,0xffefbb);
  const visitorHit=new T.Mesh(new T.CapsuleGeometry(.3,1.25,4,8),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));visitorHit.position.y=.95;visitorHit.userData.action='visitor';avatar.add(visitorHit);interactables.push(visitorHit);
- const town=buildTown({T,world,scene,box,cyl,sphere,text,tree,pole,obstacles,car,mat,interactables});
+ const town=buildTown({T,world,scene,box,cyl,sphere,text,tree,obstacles,car,mat,interactables});
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}addEventListener('resize',resize);resize();
  function night(enabled){town.night(enabled);weather.night(enabled);renderer.setClearColor(enabled?0x142d40:0x214f57);scene.fog.color.set(enabled?0x22394d:0xc9ccc0);sun.intensity=enabled?.55:2.35;hemi.intensity=enabled?1.05:1.55;}
  return {T,weather,renderer,scene,camera,world,track,car,avatar,setAvatar,animateAvatar,marker,destination,interactables,obstacles,animated,night,town};
